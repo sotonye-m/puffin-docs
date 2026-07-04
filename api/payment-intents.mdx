@@ -1,0 +1,55 @@
+---
+title: "Payment intents"
+description: "Create and retrieve payments"
+---
+
+## Create a payment intent
+
+`POST /v1/gateway/api/payment-intents`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `amount` | string | ✓ | Decimal string, up to 8 dp — never a float |
+| `token` | string | ✓ | e.g. `USDC_SOL`, `USDT_BSC`, `USDC_BASE` |
+| `chain` | string | ✓ | `SOLANA`, `ETHEREUM`, `BASE`, `POLYGON`, `BSC`, `ARBITRUM`, `OPTIMISM`, `XDC` |
+| `customerEmail` | string | — | Shown on the receipt |
+| `successUrl` | string | — | Redirect after confirmation |
+| `cancelUrl` | string | — | Redirect on cancel |
+| `metadata` | object | — | Your own keys (order id, etc.) — echoed back |
+
+```json
+// 201
+{
+  "intent": {
+    "id": "9b1f2c…",
+    "status": "PENDING",
+    "amount": "25",
+    "token": "USDC_SOL",
+    "chain": "SOLANA",
+    "walletAddress": "7xKXtg2CW…",
+    "expiresAt": "2026-07-04T12:30:00.000Z"
+  },
+  "checkoutUrl": "/pay/9b1f2c…"
+}
+```
+
+Intents expire 30 minutes after creation if unpaid.
+
+## Retrieve a payment intent
+
+`GET /v1/gateway/api/payment-intents/:id`
+
+Returns the intent with its current status:
+
+| Status | Meaning |
+|---|---|
+| `PENDING` | Awaiting on-chain payment |
+| `CONFIRMED` | Paid — deposit ≥ amount confirmed on-chain |
+| `EXPIRED` | 30-minute window elapsed |
+| `CANCELLED` | Cancelled by you |
+
+## Public checkout data
+
+`GET /v1/gateway/public/checkout/:id` — unauthenticated, powers the checkout
+page; safe to call from browsers (returns only merchant name, amount,
+address, status).

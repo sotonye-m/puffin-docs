@@ -1,0 +1,59 @@
+---
+title: "Embedded checkout (iframe SDK)"
+description: "bluvo.js — a dependency-free modal checkout for your site"
+---
+
+Keep customers on your page. `bluvo.js` opens the hosted checkout in a
+sandboxed iframe modal and reports status back via callbacks.
+
+## Install
+
+```html
+<script src="https://pay.macleodtechnologies.org/bluvo.js"></script>
+```
+
+No npm, no build step, ~2 KB, zero dependencies.
+
+## Open a payment intent
+
+Create the intent server-side ([hosted checkout](/hosted-checkout)), pass
+the id to the browser:
+
+```html
+<button id="pay">Pay 25 USDC</button>
+<script>
+  document.getElementById('pay').onclick = () =>
+    BluvoPay.open({
+      intentId: 'INTENT_ID_FROM_YOUR_SERVER',
+      onSuccess: (checkout) => (window.location = '/thanks'),
+      onExpired: () => alert('Payment window expired — try again'),
+      onClose:   () => console.log('Customer closed checkout'),
+    });
+</script>
+```
+
+## Open a payment link
+
+No backend at all:
+
+```js
+BluvoPay.openLink({
+  slug: 'consulting-invoice-x7k2m9',
+  amount: '150.00',            // omit if the link has a fixed amount
+  customerEmail: 'buyer@example.com',
+  onSuccess: () => (window.location = '/thanks'),
+});
+```
+
+## API
+
+| Method | Arguments |
+|---|---|
+| `BluvoPay.open(opts)` | `intentId` (required), `onSuccess`, `onExpired`, `onClose` |
+| `BluvoPay.openLink(opts)` | `slug` (required), `amount?`, `customerEmail?`, callbacks + `onError` |
+| `BluvoPay.close()` | Programmatically dismiss the modal |
+
+<Warning>
+Client callbacks are for UX only. Fulfil orders from the
+`payment.confirmed` [webhook](/webhooks) or a server-side GET of the intent.
+</Warning>

@@ -1,0 +1,48 @@
+---
+title: "Webhooks"
+description: "HMAC-signed payment events pushed to your server"
+---
+
+## Add an endpoint
+
+Dashboard → **Webhooks** → add your HTTPS URL and choose events (start with
+`payment.confirmed`). You'll get a signing secret (`whsec_…`).
+
+## Payload
+
+```json
+POST https://yourserver.com/webhooks/bluvo
+X-Bluvo-Signature: 3f5a…   // HMAC-SHA256 of the raw body
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## Verify the signature
+
+Always verify before trusting anything:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## Delivery & retries
+
+- Respond `2xx` within 10 seconds; anything else counts as a failure.
+- We retry up to **3 times** with backoff; deliveries and status codes are
+  visible in the dashboard.
+- Handlers must be **idempotent** — key on `paymentIntentId`.

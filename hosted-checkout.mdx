@@ -1,0 +1,55 @@
+---
+title: "Hosted checkout (self-hosted integration)"
+description: "Create intents from your server, redirect to our checkout"
+---
+
+The classic server-driven flow: your backend creates a payment intent with
+your API key, then redirects the customer to the hosted checkout page.
+
+## Flow
+
+```mermaid
+sequenceDiagram
+  participant C as Customer
+  participant S as Your server
+  participant B as Bluvo Pay
+  C->>S: Clicks "Pay with crypto"
+  S->>B: POST /v1/gateway/api/payment-intents (X-API-Key)
+  B-->>S: { intent, checkoutUrl }
+  S-->>C: 302 → pay.macleodtechnologies.org/pay/:id
+  C->>B: Sends stablecoins to the fresh address
+  B-->>S: Webhook payment.confirmed (HMAC-signed)
+  B-->>C: Redirect to your successUrl
+```
+
+## Create the intent
+
+```js
+const res = await fetch('https://api.macleodtechnologies.org/v1/gateway/api/payment-intents', {
+  method: 'POST',
+  headers: { 'X-API-Key': process.env.BLUVO_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    amount: '99.00',
+    token: 'USDC_BASE',
+    chain: 'BASE',
+    successUrl: 'https://yourstore.com/orders/123/thanks',
+    metadata: { orderId: '123' },
+  }),
+});
+const { intent, checkoutUrl } = await res.json();
+```
+
+## Poll or verify
+
+```bash
+GET /v1/gateway/api/payment-intents/:id   # X-API-Key
+```
+
+Statuses: `PENDING → CONFIRMED | EXPIRED | CANCELLED`. Always treat the
+**webhook** (or this GET) as the source of truth — never the browser.
+
+## Supported assets
+
+All stablecoins on all networks Bluvo supports: Solana, Ethereum, Base,
+Polygon, BSC, Arbitrum, Optimism, XDC — `GET /v1/wallets/supported` lists
+the current matrix.

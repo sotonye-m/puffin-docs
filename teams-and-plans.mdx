@@ -1,0 +1,41 @@
+---
+title: "Teams & plans"
+description: "Roles, notification routing, and subscription tiers"
+---
+
+## Team roles (RBAC)
+
+Invite teammates from Dashboard → **Team**. Members sign in with their email
+— passwordless.
+
+| Role | Can do |
+|---|---|
+| `OWNER` | Everything, including billing and team management |
+| `ADMIN` | Everything except billing |
+| `FINANCE` | Payments, payouts, wallets, reports |
+| `DEVELOPER` | API keys and webhooks |
+| `SUPPORT` | Read payments and customers |
+| `VIEWER` | Read-only |
+
+## Notification routing
+
+Each member has per-event email toggles — `transactions`, `deposits`,
+`payouts`, `subscription`, `security`, `reports`. Your finance lead gets
+payout emails; your engineer gets webhook failures; nobody drowns in mail.
+
+## Subscription tiers
+
+| Plan | Monthly | Gateway fee | Wallets | Team seats |
+|---|---|---|---|---|
+| Starter | Free | 1.5% | 3 | 2 |
+| Growth | $49 | 1.0% | 15 | 8 |
+| Scale | $199 | 0.6% | 100 | 50 |
+
+Plans and custom fee rates are managed by the Bluvo admin team — contact
+support to upgrade or negotiate volume pricing.
+
+## Merchant wallets
+
+Create collection wallets on any supported chain (Dashboard → **Wallets**),
+up to your plan's limit. Gateway payments always use fresh single-use
+addresses regardless of your wallet count.

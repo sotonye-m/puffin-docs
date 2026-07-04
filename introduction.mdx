@@ -1,0 +1,39 @@
+---
+title: "Introduction"
+description: "Accept stablecoin payments on every major chain, settled to wallets you control"
+---
+
+**Bluvo Pay** is the crypto payment gateway by MacLeod Technologies. Your
+customers pay in stablecoins (USDC, USDT, EURC, USDG, PYUSD and more) on any
+supported network — Solana, Ethereum, Base, Polygon, BSC, Arbitrum, Optimism
+or XDC — and you get confirmation webhooks, a dashboard, and receipts.
+
+## Three ways to integrate
+
+<CardGroup cols={3}>
+  <Card title="Payment links" icon="link" href="/payment-links">
+    Zero code. Create a link in the dashboard, share it anywhere.
+  </Card>
+  <Card title="Hosted checkout" icon="globe" href="/hosted-checkout">
+    One API call creates a payment; redirect your customer to our checkout page.
+  </Card>
+  <Card title="Embedded (iframe SDK)" icon="code" href="/embed">
+    Drop `bluvo.js` into your site and open checkout in a modal — customers never leave.
+  </Card>
+</CardGroup>
+
+## How a payment works
+
+1. You create a **payment intent** (amount + token + chain).
+2. Bluvo mints a **fresh deposit address** for that payment.
+3. Your customer pays; we detect and confirm on-chain.
+4. The intent flips to `CONFIRMED`, your webhook fires (HMAC-signed), and the
+   dashboard updates in real time.
+
+Every payment address is single-use — no amount-matching heuristics, no
+crossed payments.
+
+## Pricing
+
+Fees are set by your subscription plan (Starter 1.5%, Growth 1.0%, Scale
+0.6%) or a custom rate. See [Teams & plans](/teams-and-plans).

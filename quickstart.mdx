@@ -1,0 +1,51 @@
+---
+title: "Quickstart"
+description: "First confirmed payment in under five minutes"
+---
+
+<Steps>
+  <Step title="Create your merchant account">
+    Sign in to the [merchant dashboard](https://pay.macleodtechnologies.org)
+    with your email (passwordless — we send a code), then create your
+    business profile. Accounts are approved quickly.
+  </Step>
+  <Step title="Create an API key">
+    Dashboard → **API keys** → *Create key*. The full key (`mk_live_…`) is
+    shown **once** — store it server-side, never in frontend code.
+  </Step>
+  <Step title="Create a payment intent">
+    ```bash
+    curl -X POST https://api.macleodtechnologies.org/v1/gateway/api/payment-intents \
+      -H "X-API-Key: mk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": "25.00",
+        "token": "USDC_SOL",
+        "chain": "SOLANA",
+        "customerEmail": "buyer@example.com",
+        "successUrl": "https://yourstore.com/thanks"
+      }'
+    ```
+
+    ```json
+    {
+      "intent": { "id": "9b1f…", "status": "PENDING", "walletAddress": "7xKX…", "expiresAt": "…" },
+      "checkoutUrl": "/pay/9b1f…"
+    }
+    ```
+  </Step>
+  <Step title="Send your customer to checkout">
+    Redirect to `https://pay.macleodtechnologies.org/pay/<intent-id>` — they
+    see the amount, a QR code, and a live status that confirms the moment the
+    payment lands.
+  </Step>
+  <Step title="Get notified">
+    Add a [webhook endpoint](/webhooks) and listen for `payment.confirmed`.
+    Payment intents expire after 30 minutes if unpaid.
+  </Step>
+</Steps>
+
+<Tip>
+Prefer zero backend code? Use [payment links](/payment-links) or the
+[iframe SDK](/embed).
+</Tip>
