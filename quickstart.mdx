@@ -5,7 +5,7 @@ description: "First confirmed payment in under five minutes"
 
 <Steps>
   <Step title="Create your merchant account">
-    Sign in to the [merchant dashboard](https://pay.macleodtechnologies.org)
+    Sign in to the [merchant dashboard](https://pay.puffinmoney.com)
     with your email (passwordless — we send a code), then create your
     business profile. Accounts are approved quickly.
   </Step>
@@ -15,7 +15,7 @@ description: "First confirmed payment in under five minutes"
   </Step>
   <Step title="Create a payment intent">
     ```bash
-    curl -X POST https://api.macleodtechnologies.org/v1/gateway/api/payment-intents \
+    curl -X POST https://api.puffinmoney.com/v1/gateway/api/payment-intents \
       -H "X-API-Key: mk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -35,7 +35,7 @@ description: "First confirmed payment in under five minutes"
     ```
   </Step>
   <Step title="Send your customer to checkout">
-    Redirect to `https://pay.macleodtechnologies.org/pay/<intent-id>` — they
+    Redirect to `https://pay.puffinmoney.com/pay/<intent-id>` — they
     see the amount, a QR code, and a live status that confirms the moment the
     payment lands.
   </Step>

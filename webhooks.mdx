@@ -11,8 +11,8 @@ Dashboard → **Webhooks** → add your HTTPS URL and choose events (start with
 ## Payload
 
 ```json
-POST https://yourserver.com/webhooks/bluvo
-X-Bluvo-Signature: 3f5a…   // HMAC-SHA256 of the raw body
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // HMAC-SHA256 of the raw body
 
 {
   "event": "payment.confirmed",

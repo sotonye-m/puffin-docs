@@ -1,15 +1,15 @@
 ---
 title: "Embedded checkout (iframe SDK)"
-description: "bluvo.js — a dependency-free modal checkout for your site"
+description: "puffin.js — a dependency-free modal checkout for your site"
 ---
 
-Keep customers on your page. `bluvo.js` opens the hosted checkout in a
+Keep customers on your page. `puffin.js` opens the hosted checkout in a
 sandboxed iframe modal and reports status back via callbacks.
 
 ## Install
 
 ```html
-<script src="https://pay.macleodtechnologies.org/bluvo.js"></script>
+<script src="https://pay.puffinmoney.com/puffin.js"></script>
 ```
 
 No npm, no build step, ~2 KB, zero dependencies.
@@ -23,7 +23,7 @@ the id to the browser:
 <button id="pay">Pay 25 USDC</button>
 <script>
   document.getElementById('pay').onclick = () =>
-    BluvoPay.open({
+    PuffinPay.open({
       intentId: 'INTENT_ID_FROM_YOUR_SERVER',
       onSuccess: (checkout) => (window.location = '/thanks'),
       onExpired: () => alert('Payment window expired — try again'),
@@ -37,7 +37,7 @@ the id to the browser:
 No backend at all:
 
 ```js
-BluvoPay.openLink({
+PuffinPay.openLink({
   slug: 'consulting-invoice-x7k2m9',
   amount: '150.00',            // omit if the link has a fixed amount
   customerEmail: 'buyer@example.com',
@@ -49,9 +49,9 @@ BluvoPay.openLink({
 
 | Method | Arguments |
 |---|---|
-| `BluvoPay.open(opts)` | `intentId` (required), `onSuccess`, `onExpired`, `onClose` |
-| `BluvoPay.openLink(opts)` | `slug` (required), `amount?`, `customerEmail?`, callbacks + `onError` |
-| `BluvoPay.close()` | Programmatically dismiss the modal |
+| `PuffinPay.open(opts)` | `intentId` (required), `onSuccess`, `onExpired`, `onClose` |
+| `PuffinPay.openLink(opts)` | `slug` (required), `amount?`, `customerEmail?`, callbacks + `onError` |
+| `PuffinPay.close()` | Programmatically dismiss the modal |
 
 <Warning>
 Client callbacks are for UX only. Fulfil orders from the

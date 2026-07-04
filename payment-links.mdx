@@ -11,7 +11,7 @@ mints a fresh payment intent, so one link can collect unlimited payments.
 1. Dashboard → **Payment links** → set a title, choose token & chain.
 2. Set a fixed amount, or leave it blank to let the customer choose
    (donations, tips, pay-what-you-want).
-3. Share `https://pay.macleodtechnologies.org/link/<slug>` — chat, invoice,
+3. Share `https://pay.puffinmoney.com/link/<slug>` — chat, invoice,
    email signature, QR on a receipt, anywhere.
 
 ## Programmatic use
@@ -19,7 +19,7 @@ mints a fresh payment intent, so one link can collect unlimited payments.
 Create an intent from a link (public endpoint, no API key):
 
 ```bash
-curl -X POST https://api.macleodtechnologies.org/v1/gateway/public/links/<slug>/intent \
+curl -X POST https://api.puffinmoney.com/v1/gateway/public/links/<slug>/intent \
   -H "Content-Type: application/json" \
   -d '{ "amount": "10.00", "customerEmail": "buyer@example.com" }'
 ```
@@ -32,7 +32,7 @@ Then send the customer to `/pay/<intentId>` or open it with the
 [iframe SDK](/embed):
 
 ```js
-BluvoPay.openLink({ slug: 'consulting-invoice-x7k2m9', amount: '150.00' });
+PuffinPay.openLink({ slug: 'consulting-invoice-x7k2m9', amount: '150.00' });
 ```
 
 <Note>

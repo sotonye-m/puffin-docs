@@ -12,11 +12,11 @@ your API key, then redirects the customer to the hosted checkout page.
 sequenceDiagram
   participant C as Customer
   participant S as Your server
-  participant B as Bluvo Pay
+  participant B as Puffin Pay
   C->>S: Clicks "Pay with crypto"
   S->>B: POST /v1/gateway/api/payment-intents (X-API-Key)
   B-->>S: { intent, checkoutUrl }
-  S-->>C: 302 → pay.macleodtechnologies.org/pay/:id
+  S-->>C: 302 → pay.puffinmoney.com/pay/:id
   C->>B: Sends stablecoins to the fresh address
   B-->>S: Webhook payment.confirmed (HMAC-signed)
   B-->>C: Redirect to your successUrl
@@ -25,9 +25,9 @@ sequenceDiagram
 ## Create the intent
 
 ```js
-const res = await fetch('https://api.macleodtechnologies.org/v1/gateway/api/payment-intents', {
+const res = await fetch('https://api.puffinmoney.com/v1/gateway/api/payment-intents', {
   method: 'POST',
-  headers: { 'X-API-Key': process.env.BLUVO_KEY, 'Content-Type': 'application/json' },
+  headers: { 'X-API-Key': process.env.PUFFIN_KEY, 'Content-Type': 'application/json' },
   body: JSON.stringify({
     amount: '99.00',
     token: 'USDC_BASE',
@@ -50,6 +50,6 @@ Statuses: `PENDING → CONFIRMED | EXPIRED | CANCELLED`. Always treat the
 
 ## Supported assets
 
-All stablecoins on all networks Bluvo supports: Solana, Ethereum, Base,
+All stablecoins on all networks Puffin supports: Solana, Ethereum, Base,
 Polygon, BSC, Arbitrum, Optimism, XDC — `GET /v1/wallets/supported` lists
 the current matrix.
