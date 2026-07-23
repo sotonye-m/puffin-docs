@@ -1,4 +1,4 @@
-<svg width="140" height="40" viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Puffin Pay">
+<svg width="140" height="40" viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="Puffin Pay">
   <g transform="translate(0,0)">
     <circle cx="60" cy="60" r="58" fill="#E8F2FF" />
     <circle cx="60" cy="60" r="56" stroke="#60A5FA" stroke-width="3" />
