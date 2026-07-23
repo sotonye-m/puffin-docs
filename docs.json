@@ -16,13 +16,14 @@
         "groups": [
           { "group": "Getting started", "pages": ["introduction", "quickstart"] },
           { "group": "Ways to accept payments", "pages": ["payment-links", "hosted-checkout", "embed"] },
+          { "group": "Wallet-as-a-Service", "pages": ["wallets", "bridging"] },
           { "group": "Going further", "pages": ["webhooks", "teams-and-plans"] }
         ]
       },
       {
         "tab": "API Reference",
         "groups": [
-          { "group": "API", "pages": ["api/authentication", "api/payment-intents"] }
+          { "group": "API", "pages": ["api/authentication", "api/payment-intents", "api/wallets", "api/bridge"] }
         ]
       }
     ]

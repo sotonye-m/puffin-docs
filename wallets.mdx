@@ -1,0 +1,93 @@
+---
+title: "Wallet-as-a-Service"
+description: "Create and manage USDC/USDT wallets across four chains, over one API"
+---
+
+Puffin's Wallet-as-a-Service (WaaS) API lets you create and operate
+stablecoin wallets programmatically — no key management, no chain-specific
+infrastructure, no custody build-out. It's the same `X-API-Key` you already
+use for [payment intents](/api/payment-intents).
+
+<Note>
+WaaS launches scoped to **USDC and USDT on Solana, Polygon, BSC, and
+Base** (Base is USDC-only — there's no canonical Tether-issued USDT
+contract there). For collecting any Puffin-supported chain/token as a
+one-off payment, use [payment intents](/api/payment-intents) instead.
+</Note>
+
+## What you get
+
+<CardGroup cols={2}>
+  <Card title="Wallets on demand" icon="wallet">
+    `POST /v1/gateway/api/wallets` mints a wallet for a chain + token pair
+    and returns its address immediately.
+  </Card>
+  <Card title="Balances & deposits" icon="chart-line">
+    Query live balance and deposit history per wallet — no chain explorer
+    required.
+  </Card>
+  <Card title="Withdrawals" icon="paper-plane">
+    Send from any wallet you created to an external address, with the same
+    idempotency-key semantics as payment intents.
+  </Card>
+  <Card title="Deposit webhooks" icon="bell">
+    `wallet.deposit.detected` and `wallet.deposit.confirmed` fire the moment
+    funds land — see [Webhooks](/webhooks).
+  </Card>
+</CardGroup>
+
+## Create a wallet
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+Wallet creation is subject to your plan's wallet limit, same as the
+dashboard-created wallets you may already have.
+
+## Check a balance
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Send a withdrawal
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+The `Idempotency-Key` header works exactly like it does for payment
+intents — replaying the same key returns the original response instead of
+sending twice.
+
+## Full reference
+
+See the [Wallets API reference](/api/wallets) for every field and error
+code, and [Bridging & swaps](/bridging) if you need to move funds between
+chains rather than just out to an address on the same chain.

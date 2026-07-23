@@ -1,0 +1,74 @@
+---
+title: "Wallets"
+description: "Create, fund, and manage WaaS wallets"
+---
+
+All endpoints below are under `https://api.puffinmoney.com/v1/gateway/api`
+and require the `X-API-Key` header — see [Authentication](/api/authentication).
+See [Wallet-as-a-Service](/wallets) for a walkthrough.
+
+## Create a wallet
+
+`POST /wallets`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, or `BASE` |
+| `token` | string | ✓ | e.g. `USDC_SOL`, `USDT_POLYGON`, `USDC_BSC`, `USDC_BASE` — see `/wallets` for the full matrix |
+| `label` | string | — | Up to 40 characters, your own reference |
+
+Supports the same `Idempotency-Key` header as payment intents. Returns
+`402 plan_limit` if you're at your plan's wallet cap, `400 unsupported_asset`
+if the chain/token pair isn't in the WaaS matrix (the response body includes
+the current `supported` matrix so you don't have to hardcode it).
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## List wallets
+
+`GET /wallets` — returns every wallet you've created via this API, plus the
+current `supported` chain/token matrix.
+
+## Get a wallet
+
+`GET /wallets/:id`
+
+## Get a balance
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## List deposits
+
+`GET /wallets/:id/deposits` — up to the 50 most recent deposits to this
+wallet.
+
+## Send a withdrawal
+
+`POST /wallets/:id/withdrawals`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `toAddress` | string | ✓ | Destination address on the wallet's own chain |
+| `amount` | string | ✓ | Decimal string, up to 8 dp |
+| `note` | string | — | Up to 140 characters, your own reference |
+
+Debits the wallet immediately (reserved before broadcast — you can't
+double-spend by racing two withdrawal calls). Fees are charged per your
+`waas` capability pricing — see [Pricing](/teams-and-plans#usage-based-pricing).
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+Need to move funds to a **different chain**, not just a different address on
+the same chain? Use [Bridge](/api/bridge) instead.
+</Note>

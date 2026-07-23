@@ -40,6 +40,21 @@ function verify(rawBody, signature, secret) {
 }
 ```
 
+## Events
+
+| Event | Fires when |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | A payment intent's received amount covers its target |
+| `payment.dispute_opened` | A payer reports sending funds that didn't match an intent |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | Late-payment handling per your `latePaymentPolicy` |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | A deposit lands on a [WaaS wallet](/wallets) you created via the API — distinct from the payment-intent flow above |
+| `bridge.completed` / `bridge.failed` | A [bridge transfer](/bridging) reaches a terminal state |
+
+`wallet.*` and `bridge.*` payloads include `walletId`/`bridgeTransferId`,
+`chain`/`route`, `amount`, and the relevant transaction hash(es) — shaped
+the same way as their API responses in [Wallets](/api/wallets) and
+[Bridge](/api/bridge).
+
 ## Delivery & retries
 
 - Respond `2xx` within 10 seconds; anything else counts as a failure.

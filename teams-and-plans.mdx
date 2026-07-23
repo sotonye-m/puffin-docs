@@ -39,3 +39,21 @@ support to upgrade or negotiate volume pricing.
 Create collection wallets on any supported chain (Dashboard → **Wallets**),
 up to your plan's limit. Gateway payments always use fresh single-use
 addresses regardless of your wallet count.
+
+## Usage-based pricing
+
+Pricing is set **per capability** — Gateway (payment intents), WaaS
+([wallets](/wallets)), and Swap ([bridging](/bridging)) — not one flat rate
+across everything. Each capability has two independent components:
+
+| Component | What it covers |
+|---|---|
+| **Platform** | Puffin's margin |
+| **Gas** | Recovers the network gas Puffin's gas stations pay on your behalf |
+
+Each component can carry a percentage, a flat fee, or both, with optional
+minimum/maximum caps — e.g. "0.5% capped between $0.01 and $2.00." Your
+effective rate is your plan's default, with any custom override your
+account manager has set layered on top. Check `GET /v1/gateway/merchants/me/fees`
+(dashboard session) for your exact current numbers per capability, or ask
+support if you're negotiating a custom rate.

@@ -1,0 +1,91 @@
+---
+title: "Bridging & swaps"
+description: "Move USDC and USDT across Solana, Polygon, BSC, and Base from one API"
+---
+
+Puffin routes cross-chain transfers through whichever mechanism actually
+fits the pair you're moving — you call one endpoint either way.
+
+## How routing works
+
+<CardGroup cols={2}>
+  <Card title="CCTP V2" icon="bolt">
+    Used for **USDC-only** legs between CCTP-enabled chains (Solana and the
+    supported EVM chains). Native burn-and-mint via Circle's protocol — no
+    wrapped assets, no liquidity pool slippage.
+  </Card>
+  <Card title="NEAR Intents" icon="shuffle">
+    Used for everything CCTP doesn't cover: **USDT** on any chain, BSC legs,
+    and any cross-asset swap. Solver-network routed via a deposit address.
+  </Card>
+</CardGroup>
+
+You never choose the route explicitly — `POST /bridge/quote` tells you which
+one was selected (`"route": "cctp_v2"` or `"route": "near_intents"`) along
+with the network fee and an ETA, before you commit to it.
+
+## Quote, then execute
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
+  -H "X-API-Key: mk_live_..." \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+```json
+{
+  "quote": { "route": "cctp_v2", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`ourFee` is Puffin's platform + gas-recovery charge on top of the quoted
+network fee — see [Pricing](/teams-and-plans#usage-based-pricing) for how
+it's configured. When you're ready:
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: bridge_2026-07-22_001" \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+This debits the source wallet immediately and returns a `bridgeTransfer`
+you can poll — or just wait for the webhook.
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
+  -H "X-API-Key: mk_live_..."
+```
+
+| Status | Meaning |
+|---|---|
+| `pending` / `source_sent` | Debited, broadcasting the source-side transaction |
+| `attesting` | Waiting on CCTP attestation or the NEAR Intents solver |
+| `completed` | Funds delivered to `destinationAddress` on `toChain` |
+| `failed` / `refunded` | Did not complete — see `metadata` for details |
+
+## Webhooks
+
+Subscribe to `bridge.completed` and `bridge.failed` — see [Webhooks](/webhooks)
+for the full payload shape.
+
+<Note>
+Bridging is USDC/USDT-only today, matching the [Wallet-as-a-Service](/wallets)
+chain/token matrix (Solana, Polygon, BSC, Base). A bridge request for an
+unconfigured route returns `bridge_not_configured` — this is an operational
+gate on our side while a corridor is being rolled out, not something you can
+work around client-side.
+</Note>
