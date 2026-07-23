@@ -1,0 +1,79 @@
+---
+title: "Wallets"
+description: "Créer, approvisionner et gérer des portefeuilles WaaS"
+---
+
+Tous les points de terminaison ci-dessous se trouvent sous
+`https://api.puffinmoney.com/v1/gateway/api` et requièrent l'en-tête
+`X-API-Key` — voir [Authentification](/api/authentication). Voir
+[Wallet-as-a-Service](/wallets) pour un guide pas à pas.
+
+## Créer un portefeuille
+
+`POST /wallets`
+
+| Champ | Type | Requis | Notes |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, ou `BASE` |
+| `token` | string | ✓ | ex. `USDC_SOL`, `USDT_POLYGON`, `USDC_BSC`, `USDC_BASE` — voir `/wallets` pour la matrice complète |
+| `label` | string | — | Jusqu'à 40 caractères, votre propre référence |
+
+Prend en charge le même en-tête `Idempotency-Key` que les intentions de
+paiement. Renvoie `402 plan_limit` si vous avez atteint la limite de
+portefeuilles de votre forfait, `400 unsupported_asset` si la paire
+chaîne/jeton n'est pas dans la matrice WaaS (le corps de la réponse
+inclut la matrice `supported` actuelle afin que vous n'ayez pas à la
+coder en dur).
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## Lister les portefeuilles
+
+`GET /wallets` — renvoie tous les portefeuilles créés via cette API, plus
+la matrice `supported` actuelle des chaînes/jetons.
+
+## Obtenir un portefeuille
+
+`GET /wallets/:id`
+
+## Obtenir un solde
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Lister les dépôts
+
+`GET /wallets/:id/deposits` — jusqu'aux 50 dépôts les plus récents sur ce
+portefeuille.
+
+## Envoyer un retrait
+
+`POST /wallets/:id/withdrawals`
+
+| Champ | Type | Requis | Notes |
+|---|---|---|---|
+| `toAddress` | string | ✓ | Adresse de destination sur la propre chaîne du portefeuille |
+| `amount` | string | ✓ | Chaîne décimale, jusqu'à 8 décimales |
+| `note` | string | — | Jusqu'à 140 caractères, votre propre référence |
+
+Débite immédiatement le portefeuille (réservé avant diffusion — vous ne
+pouvez pas dépenser deux fois en lançant deux appels de retrait en
+parallèle). Les frais sont facturés selon votre tarification de capacité
+`waas` — voir [Tarification](/teams-and-plans#usage-based-pricing).
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+Besoin de déplacer des fonds vers une **chaîne différente**, et pas
+seulement vers une autre adresse sur la même chaîne ? Utilisez plutôt
+[Bridge](/api/bridge).
+</Note>

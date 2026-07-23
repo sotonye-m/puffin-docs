@@ -1,0 +1,60 @@
+---
+title: "الدفع المدمج (iframe SDK)"
+description: "puffin.js — نافذة دفع منبثقة بلا اعتماديات لموقعك"
+---
+
+أبقِ عملاءك في صفحتك. يفتح `puffin.js` صفحة الدفع المستضافة داخل نافذة
+iframe معزولة، ويُبلغ عن الحالة عبر دوال رد النداء (callbacks).
+
+## التثبيت
+
+```html
+<script src="https://pay.puffinmoney.com/puffin.js"></script>
+```
+
+بدون npm، بدون خطوة بناء، حوالي 2 كيلوبايت، بلا أي اعتماديات.
+
+## افتح نية دفع
+
+أنشئ النية من جانب الخادم ([الدفع المستضاف](/hosted-checkout))، ومرر
+المعرف إلى المتصفح:
+
+```html
+<button id="pay">ادفع 25 USDC</button>
+<script>
+  document.getElementById('pay').onclick = () =>
+    PuffinPay.open({
+      intentId: 'INTENT_ID_FROM_YOUR_SERVER',
+      onSuccess: (checkout) => (window.location = '/thanks'),
+      onExpired: () => alert('انتهت مهلة نافذة الدفع — حاول مرة أخرى'),
+      onClose:   () => console.log('أغلق العميل نافذة الدفع'),
+    });
+</script>
+```
+
+## افتح رابط دفع
+
+بدون أي خادم خلفي على الإطلاق:
+
+```js
+PuffinPay.openLink({
+  slug: 'consulting-invoice-x7k2m9',
+  amount: '150.00',            // احذفه إذا كان للرابط مبلغ ثابت
+  customerEmail: 'buyer@example.com',
+  onSuccess: () => (window.location = '/thanks'),
+});
+```
+
+## واجهة برمجة التطبيقات
+
+| الدالة | المعطيات |
+|---|---|
+| `PuffinPay.open(opts)` | `intentId` (مطلوب)، `onSuccess`، `onExpired`، `onClose` |
+| `PuffinPay.openLink(opts)` | `slug` (مطلوب)، `amount?`، `customerEmail?`، دوال رد النداء + `onError` |
+| `PuffinPay.close()` | إغلاق النافذة المنبثقة برمجيًا |
+
+<Warning>
+دوال رد النداء في جانب العميل مخصصة لتجربة المستخدم فقط. نفّذ الطلبات دائمًا
+عبر webhook الخاص بـ `payment.confirmed` ([webhooks](/webhooks)) أو عبر
+طلب GET من جانب الخادم للنية.
+</Warning>

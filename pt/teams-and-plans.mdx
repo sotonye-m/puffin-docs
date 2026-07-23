@@ -1,0 +1,66 @@
+---
+title: "Times e planos"
+description: "Funções, roteamento de notificações e níveis de assinatura"
+---
+
+## Funções de time (RBAC)
+
+Convide colegas de time pelo Painel → **Team**. Os membros entram com o
+e-mail — sem senha.
+
+| Função | Pode fazer |
+|---|---|
+| `OWNER` | Tudo, incluindo faturamento e gestão de time |
+| `ADMIN` | Tudo, exceto faturamento |
+| `FINANCE` | Pagamentos, repasses, carteiras, relatórios |
+| `DEVELOPER` | Chaves de API e webhooks |
+| `SUPPORT` | Somente leitura de pagamentos e clientes |
+| `VIEWER` | Somente leitura |
+
+## Roteamento de notificações
+
+Cada membro tem opções de e-mail por evento — `transactions`,
+`deposits`, `payouts`, `subscription`, `security`, `reports`. Seu líder
+financeiro recebe e-mails de repasse; seu engenheiro recebe falhas de
+webhook; ninguém se afoga em e-mails que não são da sua área.
+
+## Níveis de assinatura
+
+| Plano | Ideal para | Inclui |
+|---|---|---|
+| **Starter** | Experimentar a Puffin | Links de pagamento, checkout hospedado |
+| **Growth** | Integrações em produção | Tudo do Starter, mais a API, webhooks e o SDK de iframe |
+| **Scale** | Comerciantes de alto volume | Tudo do Growth, mais suporte dedicado e liquidação personalizada |
+
+Cada nível aumenta seus limites de carteiras e assentos de time, e reduz
+sua taxa de gateway — veja os preços e limites atuais em
+**Painel → Billing**, ou use `GET /v1/gateway/merchants/me/fees` para os
+números exatos da sua conta. Taxas personalizadas estão disponíveis para
+comerciantes de alto volume — entre em contato com o suporte para
+negociar.
+
+## Carteiras do comerciante
+
+Crie carteiras de coleta em qualquer rede suportada
+(Painel → **Wallets**), até o limite do seu plano. Pagamentos do gateway
+sempre usam endereços novos e de uso único, independentemente de quantas
+carteiras você tenha.
+
+## Preços por uso
+
+Os preços são definidos **por capacidade** — Gateway (intenções de
+pagamento), WaaS ([carteiras](/wallets)) e Swap
+([bridging](/bridging)) — não uma taxa única para tudo. Cada capacidade
+tem dois componentes independentes:
+
+| Componente | O que cobre |
+|---|---|
+| **Platform** | A margem da Puffin |
+| **Gas** | Recupera o gas de rede que as estações de gas da Puffin pagam em seu nome |
+
+Cada componente pode ter uma porcentagem, uma taxa fixa, ou ambas, com
+limites mínimo/máximo opcionais. Sua taxa efetiva é a padrão do seu
+plano, com qualquer personalização definida pelo seu gerente de conta
+adicionada em cima. Confira `GET /v1/gateway/merchants/me/fees` (sessão
+do painel) para seus números exatos atuais por capacidade, ou pergunte
+ao suporte se estiver negociando uma taxa personalizada.

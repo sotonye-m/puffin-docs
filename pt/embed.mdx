@@ -1,0 +1,61 @@
+---
+title: "Checkout incorporado (SDK iframe)"
+description: "puffin.js — um checkout modal sem dependências para o seu site"
+---
+
+Mantenha os clientes na sua página. O `puffin.js` abre o checkout
+hospedado em um modal iframe isolado e reporta o status através de
+callbacks.
+
+## Instalação
+
+```html
+<script src="https://pay.puffinmoney.com/puffin.js"></script>
+```
+
+Sem npm, sem etapa de build, ~2 KB, zero dependências.
+
+## Abrir uma intenção de pagamento
+
+Crie a intenção no servidor ([checkout hospedado](/hosted-checkout)),
+passe o id para o navegador:
+
+```html
+<button id="pay">Pagar 25 USDC</button>
+<script>
+  document.getElementById('pay').onclick = () =>
+    PuffinPay.open({
+      intentId: 'INTENT_ID_FROM_YOUR_SERVER',
+      onSuccess: (checkout) => (window.location = '/thanks'),
+      onExpired: () => alert('A janela de pagamento expirou — tente novamente'),
+      onClose:   () => console.log('O cliente fechou o checkout'),
+    });
+</script>
+```
+
+## Abrir um link de pagamento
+
+Sem nenhum backend:
+
+```js
+PuffinPay.openLink({
+  slug: 'consulting-invoice-x7k2m9',
+  amount: '150.00',            // omita se o link tiver valor fixo
+  customerEmail: 'buyer@example.com',
+  onSuccess: () => (window.location = '/thanks'),
+});
+```
+
+## API
+
+| Método | Argumentos |
+|---|---|
+| `PuffinPay.open(opts)` | `intentId` (obrigatório), `onSuccess`, `onExpired`, `onClose` |
+| `PuffinPay.openLink(opts)` | `slug` (obrigatório), `amount?`, `customerEmail?`, callbacks + `onError` |
+| `PuffinPay.close()` | Fecha o modal programaticamente |
+
+<Warning>
+Callbacks do cliente servem apenas para UX. Sempre cumpra pedidos a
+partir do webhook `payment.confirmed` ([webhooks](/webhooks)) ou de um
+GET no servidor sobre a intenção.
+</Warning>

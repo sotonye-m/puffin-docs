@@ -1,0 +1,75 @@
+---
+title: "Bridge"
+description: "报价并执行跨链 USDC/USDT 转账"
+---
+
+以下所有端点均位于 `https://api.puffinmoney.com/v1/gateway/api` 下，且需要
+`X-API-Key` 请求头——参见[身份验证](/api/authentication)。自动路由的工作
+原理请见[跨链桥接与兑换](/bridging)。
+
+## 为一笔转账报价
+
+`POST /bridge/quote`
+
+| 字段 | 类型 | 是否必填 | 说明 |
+|---|---|---|---|
+| `walletId` | string | ✓ | 源钱包——其链/代币即为转账的来源 |
+| `toChain` | string | ✓ | `SOLANA`、`POLYGON`、`BSC`、或 `BASE` |
+| `toToken` | string | ✓ | 目标代币符号 |
+| `amount` | string | ✓ | 十进制字符串，最多 8 位小数 |
+| `destinationAddress` | string | ✓ | `toChain` 上的收款人地址 |
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`quote.route` 是一个不透明的内部路由标识符——只读，仅供参考；
+`POST /bridge` 对相同的输入会选择相同的路径。
+
+## 执行一笔转账
+
+`POST /bridge` —— 请求体与报价请求相同，另可附带可选的
+`Idempotency-Key` 请求头。
+
+会原子化地预留并扣除源钱包资金，随后按报价的路径启动转账。会立即返回一个
+状态为 `pending` 的转账记录——不会等待其完成。
+
+```json
+// 201
+{
+  "bridgeTransfer": {
+    "id": "br_9f21…",
+    "route": "auto",
+    "fromChain": "SOLANA",
+    "toChain": "BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc...",
+    "status": "attesting"
+  }
+}
+```
+
+## 查询转账状态
+
+`GET /bridge/:id`
+
+| 状态 | 含义 |
+|---|---|
+| `pending` / `source_sent` | 已扣款，正在广播源端交易 |
+| `attesting` | 正在确认转账，随后才能在目标链上交付 |
+| `ready_to_mint` | 已确认，目标链交付已排队 |
+| `completed` | 资金已交付——`destTxHash` 已设置 |
+| `failed` | 未能完成——请查看 `metadata` 了解错误详情 |
+| `refunded` | 资金已退回，而非交付（较为罕见） |
+
+## 错误
+
+| 错误码 | 含义 |
+|---|---|
+| `bridge_not_configured` | 所选路径对该通道尚未启用（503） |
+| `unsupported_asset` | `toChain`/`toToken` 不在 WaaS 矩阵中 |
+| `insufficient_balance` | 源钱包余额不足以覆盖金额 + 费用 |
+| `not_found` | `walletId` 或转账 `id` 不属于您 |

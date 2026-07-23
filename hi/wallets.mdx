@@ -1,0 +1,94 @@
+---
+title: "Wallet-as-a-Service"
+description: "एक API से चार चेन पर USDC/USDT वॉलेट बनाएं और मैनेज करें"
+---
+
+Puffin का Wallet-as-a-Service (WaaS) API आपको प्रोग्रामेटिक रूप से
+स्टेबलकॉइन वॉलेट बनाने और ऑपरेट करने देता है — कोई key मैनेजमेंट नहीं, कोई
+चेन-स्पेसिफ़िक इंफ्रास्ट्रक्चर नहीं, कस्टडी खुद बनाने की ज़रूरत नहीं। यह वही
+`X-API-Key` है जो आप पहले से [पेमेंट इंटेंट](/api/payment-intents) के लिए
+इस्तेमाल करते हैं।
+
+<Note>
+WaaS शुरुआत में **Solana, Polygon, BSC, और Base पर USDC और USDT** तक सीमित
+है (Base पर सिर्फ़ USDC है — वहाँ कोई आधिकारिक Tether-इश्यू USDT कॉन्ट्रैक्ट
+नहीं है)। अगर आपको Puffin के सपोर्टेड किसी भी चेन/टोकन पर सिर्फ़ एक बार का
+भुगतान लेना है, तो इसकी जगह [पेमेंट इंटेंट](/api/payment-intents) इस्तेमाल
+करें।
+</Note>
+
+## आपको क्या मिलता है
+
+<CardGroup cols={2}>
+  <Card title="ऑन-डिमांड वॉलेट" icon="wallet">
+    `POST /v1/gateway/api/wallets` एक चेन + टोकन जोड़ी के लिए वॉलेट बनाता है
+    और तुरंत उसका एड्रेस देता है।
+  </Card>
+  <Card title="बैलेंस और डिपॉज़िट" icon="chart-line">
+    हर वॉलेट का लाइव बैलेंस और डिपॉज़िट हिस्ट्री देखें — किसी चेन एक्सप्लोरर
+    की ज़रूरत नहीं।
+  </Card>
+  <Card title="विदड्रॉअल" icon="paper-plane">
+    आपके बनाए किसी भी वॉलेट से बाहरी एड्रेस पर भेजें, वही आइडेम्पोटेंसी-की
+    सिमेंटिक्स के साथ जो पेमेंट इंटेंट में हैं।
+  </Card>
+  <Card title="डिपॉज़िट Webhooks" icon="bell">
+    `wallet.deposit.detected` और `wallet.deposit.confirmed` फंड आने के उसी
+    पल ट्रिगर होते हैं — देखें [Webhooks](/webhooks)।
+  </Card>
+</CardGroup>
+
+## एक वॉलेट बनाएं
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+वॉलेट बनाना आपके प्लान की वॉलेट लिमिट के अधीन है, वही लिमिट जो डैशबोर्ड से
+बनाए वॉलेट पर भी लागू होती है।
+
+## बैलेंस चेक करें
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## एक विदड्रॉअल भेजें
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+`Idempotency-Key` हेडर बिल्कुल वैसे ही काम करता है जैसे पेमेंट इंटेंट में —
+वही key दोबारा भेजने पर मूल रिस्पॉन्स ही मिलता है, दो बार भेजा नहीं जाता।
+
+## पूरा रेफ़रेंस
+
+हर फ़ील्ड और एरर कोड के लिए देखें [Wallets API रेफ़रेंस](/api/wallets), और
+अगर आपको सिर्फ़ किसी एड्रेस पर भेजने की बजाय चेन के बीच फंड मूव करने हैं तो
+देखें [ब्रिजिंग और स्वैप](/bridging)।

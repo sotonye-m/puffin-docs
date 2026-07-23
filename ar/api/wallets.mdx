@@ -1,0 +1,73 @@
+---
+title: "Wallets"
+description: "أنشئ محافظ WaaS ومولها وأدرها"
+---
+
+جميع نقاط النهاية أدناه تقع تحت `https://api.puffinmoney.com/v1/gateway/api`
+وتتطلب رأس `X-API-Key` — راجع [المصادقة](/api/authentication). راجع
+[Wallet-as-a-Service](/wallets) للحصول على شرح تفصيلي.
+
+## أنشئ محفظة
+
+`POST /wallets`
+
+| الحقل | النوع | مطلوب | ملاحظات |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`، `POLYGON`، `BSC`، أو `BASE` |
+| `token` | string | ✓ | مثل `USDC_SOL`، `USDT_POLYGON`، `USDC_BSC`، `USDC_BASE` — راجع `/wallets` للمصفوفة الكاملة |
+| `label` | string | — | حتى 40 حرفًا، مرجعك الخاص |
+
+يدعم نفس رأس `Idempotency-Key` المستخدم في نوايا الدفع. يُعيد
+`402 plan_limit` إذا بلغت حد المحافظ في خطتك، و`400 unsupported_asset` إذا
+لم يكن زوج الشبكة/العملة ضمن مصفوفة WaaS (يتضمن نص الاستجابة مصفوفة
+`supported` الحالية حتى لا تحتاج لترميزها يدويًا).
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## اعرض قائمة المحافظ
+
+`GET /wallets` — يُعيد كل محفظة أنشأتها عبر هذه الواجهة، بالإضافة إلى
+مصفوفة `supported` الحالية للشبكات/العملات.
+
+## احصل على محفظة
+
+`GET /wallets/:id`
+
+## احصل على رصيد
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## اعرض قائمة الإيداعات
+
+`GET /wallets/:id/deposits` — حتى آخر 50 إيداعًا على هذه المحفظة.
+
+## أرسل سحبًا
+
+`POST /wallets/:id/withdrawals`
+
+| الحقل | النوع | مطلوب | ملاحظات |
+|---|---|---|---|
+| `toAddress` | string | ✓ | عنوان الوجهة على نفس شبكة المحفظة |
+| `amount` | string | ✓ | سلسلة عشرية، حتى 8 منازل عشرية |
+| `note` | string | — | حتى 140 حرفًا، مرجعك الخاص |
+
+يخصم من المحفظة فورًا (محجوز قبل البث — لا يمكنك الإنفاق المزدوج بمحاولة
+استدعاءين للسحب في وقت واحد). تُحتسب الرسوم وفق تسعير قدرة `waas` الخاصة
+بك — راجع [الأسعار](/teams-and-plans#usage-based-pricing).
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+تحتاج نقل أموال إلى **شبكة مختلفة**، وليس فقط إلى عنوان آخر على نفس
+الشبكة؟ استخدم [Bridge](/api/bridge) بدلًا من ذلك.
+</Note>

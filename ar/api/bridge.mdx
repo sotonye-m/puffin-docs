@@ -1,0 +1,74 @@
+---
+title: "Bridge"
+description: "احصل على عرض سعر ونفّذ تحويلات USDC/USDT عبر الشبكات"
+---
+
+جميع نقاط النهاية أدناه تقع تحت `https://api.puffinmoney.com/v1/gateway/api`
+وتتطلب رأس `X-API-Key` — راجع [المصادقة](/api/authentication). راجع
+[الجسور والمبادلات](/bridging) لمعرفة كيفية عمل التوجيه التلقائي.
+
+## احصل على عرض سعر لتحويل
+
+`POST /bridge/quote`
+
+| الحقل | النوع | مطلوب | ملاحظات |
+|---|---|---|---|
+| `walletId` | string | ✓ | المحفظة المصدر — شبكتها/عملتها هما مصدر التحويل |
+| `toChain` | string | ✓ | `SOLANA`، `POLYGON`، `BSC`، أو `BASE` |
+| `toToken` | string | ✓ | رمز العملة الوجهة |
+| `amount` | string | ✓ | سلسلة عشرية، حتى 8 منازل عشرية |
+| `destinationAddress` | string | ✓ | عنوان المستلم على `toChain` |
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`quote.route` هو معرّف توجيه داخلي غير شفاف — للقراءة فقط، وللإفادة فقط؛
+يختار `POST /bridge` نفس المسار لنفس المدخلات.
+
+## نفّذ تحويلًا
+
+`POST /bridge` — نفس نص طلب عرض السعر، مع رأس اختياري `Idempotency-Key`.
+
+يحجز ويخصم من المحفظة المصدر بشكل ذري، ثم يبدأ التحويل عبر المسار الذي تم
+تسعيره. يعيد فورًا تحويلًا بحالة `pending` — لا ينتظر اكتماله.
+
+```json
+// 201
+{
+  "bridgeTransfer": {
+    "id": "br_9f21…",
+    "route": "auto",
+    "fromChain": "SOLANA",
+    "toChain": "BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc...",
+    "status": "attesting"
+  }
+}
+```
+
+## احصل على حالة التحويل
+
+`GET /bridge/:id`
+
+| الحالة | المعنى |
+|---|---|
+| `pending` / `source_sent` | تم الخصم، جارٍ بث معاملة المصدر |
+| `attesting` | جارٍ تأكيد التحويل قبل إمكانية تسليمه على الشبكة الوجهة |
+| `ready_to_mint` | مؤكد، تسليم الوجهة في قائمة الانتظار |
+| `completed` | تم تسليم الأموال — `destTxHash` مُعيَّن |
+| `failed` | لم يكتمل — راجع `metadata` لمعرفة الخطأ |
+| `refunded` | أُعيدت الأموال بدلًا من تسليمها (نادر الحدوث) |
+
+## الأخطاء
+
+| الكود | المعنى |
+|---|---|
+| `bridge_not_configured` | المسار المختار غير مفعّل بعد لهذا الممر (503) |
+| `unsupported_asset` | `toChain`/`toToken` ليست ضمن مصفوفة WaaS |
+| `insufficient_balance` | المحفظة المصدر لا تستطيع تغطية المبلغ + الرسوم |
+| `not_found` | `walletId` أو معرّف التحويل لا يخصك |

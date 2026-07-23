@@ -1,0 +1,58 @@
+---
+title: "嵌入式结账（iframe SDK）"
+description: "puffin.js —— 为您的网站提供的零依赖模态结账"
+---
+
+让客户留在您的页面上。`puffin.js` 会在一个沙箱化的 iframe 弹窗中打开托管结账，
+并通过回调函数报告状态。
+
+## 安装
+
+```html
+<script src="https://pay.puffinmoney.com/puffin.js"></script>
+```
+
+无需 npm，无需构建步骤，约 2 KB，零依赖。
+
+## 打开一个支付意图
+
+在服务器端创建支付意图（[托管结账](/hosted-checkout)），将 id 传给浏览器：
+
+```html
+<button id="pay">支付 25 USDC</button>
+<script>
+  document.getElementById('pay').onclick = () =>
+    PuffinPay.open({
+      intentId: 'INTENT_ID_FROM_YOUR_SERVER',
+      onSuccess: (checkout) => (window.location = '/thanks'),
+      onExpired: () => alert('支付窗口已过期——请重试'),
+      onClose:   () => console.log('客户关闭了结账窗口'),
+    });
+</script>
+```
+
+## 打开一个支付链接
+
+完全无需后端：
+
+```js
+PuffinPay.openLink({
+  slug: 'consulting-invoice-x7k2m9',
+  amount: '150.00',            // 如果链接有固定金额可省略
+  customerEmail: 'buyer@example.com',
+  onSuccess: () => (window.location = '/thanks'),
+});
+```
+
+## API
+
+| 方法 | 参数 |
+|---|---|
+| `PuffinPay.open(opts)` | `intentId`（必填）、`onSuccess`、`onExpired`、`onClose` |
+| `PuffinPay.openLink(opts)` | `slug`（必填）、`amount?`、`customerEmail?`、回调函数 + `onError` |
+| `PuffinPay.close()` | 以编程方式关闭弹窗 |
+
+<Warning>
+客户端回调仅用于用户体验。请始终通过 `payment.confirmed`
+[webhook](/webhooks) 或服务器端对支付意图的 GET 请求来处理订单履行。
+</Warning>

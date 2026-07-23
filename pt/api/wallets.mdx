@@ -1,0 +1,77 @@
+---
+title: "Wallets"
+description: "Crie, aporte fundos e gerencie carteiras WaaS"
+---
+
+Todos os endpoints abaixo estão sob
+`https://api.puffinmoney.com/v1/gateway/api` e exigem o cabeçalho
+`X-API-Key` — veja [Autenticação](/api/authentication). Veja
+[Wallet-as-a-Service](/wallets) para um passo a passo completo.
+
+## Criar uma carteira
+
+`POST /wallets`
+
+| Campo | Tipo | Obrigatório | Notas |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, ou `BASE` |
+| `token` | string | ✓ | ex. `USDC_SOL`, `USDT_POLYGON`, `USDC_BSC`, `USDC_BASE` — veja `/wallets` para a matriz completa |
+| `label` | string | — | Até 40 caracteres, sua própria referência |
+
+Suporta o mesmo cabeçalho `Idempotency-Key` das intenções de pagamento.
+Retorna `402 plan_limit` se você atingiu o limite de carteiras do seu
+plano, `400 unsupported_asset` se o par rede/token não estiver na matriz
+WaaS (o corpo da resposta inclui a matriz `supported` atual para que você
+não precise codificá-la manualmente).
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## Listar carteiras
+
+`GET /wallets` — retorna todas as carteiras que você criou por essa API,
+mais a matriz `supported` atual de redes/tokens.
+
+## Consultar uma carteira
+
+`GET /wallets/:id`
+
+## Consultar um saldo
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Listar depósitos
+
+`GET /wallets/:id/deposits` — até os 50 depósitos mais recentes dessa
+carteira.
+
+## Enviar um saque
+
+`POST /wallets/:id/withdrawals`
+
+| Campo | Tipo | Obrigatório | Notas |
+|---|---|---|---|
+| `toAddress` | string | ✓ | Endereço de destino na própria rede da carteira |
+| `amount` | string | ✓ | String decimal, até 8 casas decimais |
+| `note` | string | — | Até 140 caracteres, sua própria referência |
+
+Debita a carteira imediatamente (reservado antes da transmissão — você
+não pode gastar em dobro disparando duas chamadas de saque em paralelo).
+Taxas são cobradas de acordo com sua tarifação de capacidade `waas` —
+veja [Preços](/teams-and-plans#usage-based-pricing).
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+Precisa mover fundos para uma **rede diferente**, e não apenas para outro
+endereço na mesma rede? Use [Bridge](/api/bridge) em vez disso.
+</Note>

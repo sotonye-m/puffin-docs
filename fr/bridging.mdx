@@ -1,0 +1,99 @@
+---
+title: "Bridging et swaps"
+description: "Déplacez l'USDC et l'USDT entre Solana, Polygon, BSC et Base avec une seule API"
+---
+
+Puffin achemine automatiquement les transferts inter-chaînes de la façon
+la plus rapide et la plus sûre pour la paire spécifique que vous déplacez
+— vous appelez un seul point de terminaison, nous nous chargeons de
+choisir et d'exécuter la route.
+
+## Fonctionnement
+
+<CardGroup cols={2}>
+  <Card title="Routage intelligent" icon="bolt">
+    Chaque transfert est évalué selon les actifs et les chaînes concernés,
+    et acheminé de la manière la plus rapide et la plus fiable — sans
+    actifs enveloppés, sans slippage de pool de liquidité à calculer
+    manuellement.
+  </Card>
+  <Card title="Un seul point de terminaison, toujours" icon="shuffle">
+    Les transferts d'un même actif entre chaînes et les swaps entre actifs
+    différents passent tous deux par le même appel. Vous ne choisissez
+    jamais le mécanisme vous-même.
+  </Card>
+</CardGroup>
+
+`POST /bridge/quote` vous indique les frais de réseau et un délai estimé
+avant que vous ne vous engagiez — `route` dans la réponse est un
+identifiant de routage interne à des fins de support uniquement ; ce
+n'est pas quelque chose sur lequel vous devez agir côté client.
+
+## Devis, puis exécution
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
+  -H "X-API-Key: mk_live_..." \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`ourFee` correspond aux frais de plateforme + récupération de gas de
+Puffin, en plus des frais de réseau du devis — voir
+[Tarification](/teams-and-plans#usage-based-pricing) pour savoir comment
+c'est configuré. Une fois prêt :
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: bridge_2026-07-22_001" \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+Ceci débite immédiatement le portefeuille source et renvoie un
+`bridgeTransfer` que vous pouvez interroger — ou simplement attendre le
+webhook.
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
+  -H "X-API-Key: mk_live_..."
+```
+
+| Statut | Signification |
+|---|---|
+| `pending` / `source_sent` | Débité, diffusion de la transaction source en cours |
+| `attesting` | Confirmation du transfert avant qu'il puisse être livré sur la chaîne de destination |
+| `completed` | Fonds livrés à `destinationAddress` sur `toChain` |
+| `failed` / `refunded` | Non abouti — voir `metadata` pour les détails |
+
+## Webhooks
+
+Abonnez-vous à `bridge.completed` et `bridge.failed` — voir
+[Webhooks](/webhooks) pour le format complet du payload.
+
+<Note>
+Le bridging se limite aujourd'hui à l'USDC/USDT, conformément à la
+matrice [Wallet-as-a-Service](/wallets) (Solana, Polygon, BSC, Base). Une
+demande de bridge pour une route non configurée renvoie
+`bridge_not_configured` — il s'agit d'une restriction opérationnelle de
+notre côté pendant qu'un corridor est en cours de déploiement, pas
+quelque chose que vous pouvez contourner côté client.
+</Note>

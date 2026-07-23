@@ -1,0 +1,88 @@
+---
+title: "钱包即服务"
+description: "通过一个 API 在四条链上创建和管理 USDC/USDT 钱包"
+---
+
+Puffin 的钱包即服务（WaaS）API 让您以编程方式创建和操作稳定币钱包——无需密钥
+管理，无需针对特定链的基础设施，无需自建托管系统。使用的正是您为
+[支付意图](/api/payment-intents)所用的同一个 `X-API-Key`。
+
+<Note>
+WaaS 初期支持范围为 **Solana、Polygon、BSC 和 Base 上的 USDC 和 USDT**
+（Base 仅支持 USDC —— 该链上没有官方 Tether 发行的 USDT 合约）。如果只是
+收取一次性支付，且需要 Puffin 支持的其他任意链/代币，请改用
+[支付意图](/api/payment-intents)。
+</Note>
+
+## 您将获得
+
+<CardGroup cols={2}>
+  <Card title="按需创建钱包" icon="wallet">
+    `POST /v1/gateway/api/wallets` 为一个链 + 代币组合生成钱包，并立即返回
+    其地址。
+  </Card>
+  <Card title="余额与存款" icon="chart-line">
+    查询每个钱包的实时余额和存款记录——无需区块链浏览器。
+  </Card>
+  <Card title="提现" icon="paper-plane">
+    从您创建的任意钱包发送到外部地址，使用与支付意图相同的幂等密钥语义。
+  </Card>
+  <Card title="存款 Webhook" icon="bell">
+    `wallet.deposit.detected` 和 `wallet.deposit.confirmed` 会在资金到账
+    的瞬间触发——参见[Webhooks](/webhooks)。
+  </Card>
+</CardGroup>
+
+## 创建一个钱包
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+创建钱包受您所在套餐的钱包上限限制，与仪表盘中创建的钱包共用同一额度。
+
+## 查询余额
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## 发起提现
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+`Idempotency-Key` 请求头的工作方式与支付意图完全相同——重复使用同一个密钥
+会返回原始响应，而不会重复发送。
+
+## 完整参考
+
+关于每个字段和错误码，请参见 [Wallets API 参考](/api/wallets)；如果需要
+在链之间转移资金，而不仅仅是发送到同一链上的另一个地址，请参见
+[跨链桥接与兑换](/bridging)。

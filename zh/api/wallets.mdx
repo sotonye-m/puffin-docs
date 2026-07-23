@@ -1,0 +1,73 @@
+---
+title: "Wallets"
+description: "创建、注资并管理 WaaS 钱包"
+---
+
+以下所有端点均位于 `https://api.puffinmoney.com/v1/gateway/api` 下，且需要
+`X-API-Key` 请求头——参见[身份验证](/api/authentication)。完整使用说明请见
+[钱包即服务](/wallets)。
+
+## 创建一个钱包
+
+`POST /wallets`
+
+| 字段 | 类型 | 是否必填 | 说明 |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`、`POLYGON`、`BSC`、或 `BASE` |
+| `token` | string | ✓ | 例如 `USDC_SOL`、`USDT_POLYGON`、`USDC_BSC`、`USDC_BASE`——完整矩阵见 `/wallets` |
+| `label` | string | — | 最多 40 个字符，供您自己参考使用 |
+
+支持与支付意图相同的 `Idempotency-Key` 请求头。如果已达到套餐的钱包上限，
+会返回 `402 plan_limit`；如果链/代币组合不在 WaaS 矩阵中，会返回
+`400 unsupported_asset`（响应体中包含当前 `supported` 矩阵，您无需自行
+硬编码）。
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## 列出钱包
+
+`GET /wallets` —— 返回您通过此 API 创建的所有钱包，以及当前的
+`supported` 链/代币矩阵。
+
+## 查询一个钱包
+
+`GET /wallets/:id`
+
+## 查询余额
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## 列出存款
+
+`GET /wallets/:id/deposits` —— 返回该钱包最近的 50 笔存款记录。
+
+## 发起提现
+
+`POST /wallets/:id/withdrawals`
+
+| 字段 | 类型 | 是否必填 | 说明 |
+|---|---|---|---|
+| `toAddress` | string | ✓ | 该钱包所在链上的目标地址 |
+| `amount` | string | ✓ | 十进制字符串，最多 8 位小数 |
+| `note` | string | — | 最多 140 个字符，供您自己参考使用 |
+
+会立即扣款（在广播前先行预留，因此并发发起两次提现调用也不会导致双花）。
+费用按您的 `waas` 能力模块定价收取——参见
+[定价](/teams-and-plans#usage-based-pricing)。
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+需要将资金转移到**另一条链**，而不仅仅是同一链上的另一个地址？请改用
+[Bridge](/api/bridge)。
+</Note>

@@ -1,0 +1,48 @@
+---
+title: "Règlement"
+description: "Comment les paiements confirmés arrivent sur votre propre portefeuille"
+---
+
+Puffin ne conserve jamais vos fonds plus longtemps que nécessaire. Dès
+qu'une intention de paiement passe à `CONFIRMED`, le montant (moins les
+frais) est envoyé on-chain vers votre propre **portefeuille de règlement**
+— une adresse que vous contrôlez, et non un solde conservé par Puffin que
+vous devriez retirer manuellement.
+
+## Configurer votre portefeuille de règlement
+
+Tableau de bord → **Wallets** → définissez un portefeuille de règlement
+par chaîne. Tant qu'aucun n'est défini pour une chaîne donnée, les
+paiements sur cette chaîne sont réglés dans un état `held` et mis en
+file d'attente en toute sécurité — rien n'est perdu, ils se libèrent
+automatiquement dès que vous ajoutez un portefeuille.
+
+## Délais
+
+Par défaut, le règlement a lieu dès qu'un paiement est confirmé. Si vous
+préférez regrouper les paiements (fin de journée, pour la réconciliation,
+etc.), votre compte peut être configuré avec un délai de règlement —
+contactez le support pour en définir un pour votre compte.
+
+## Suivi du règlement
+
+Chaque intention de paiement possède son propre `settlementStatus` :
+
+| Statut | Signification |
+|---|---|
+| `pending` / `scheduled` | Confirmé, en attente de tout délai configuré |
+| `settled` | Fonds envoyés vers votre portefeuille de règlement — `settledAt` et `settleAmount` sont définis |
+| `held` | Aucun portefeuille de règlement encore configuré pour cette chaîne |
+| `failed` | Le transfert on-chain n'a pas abouti — le support est notifié automatiquement |
+
+`feeAmount` et `settleAmount` sur l'intention indiquent exactement ce qui
+a été déduit et ce que vous avez reçu — les mêmes chiffres que ceux
+utilisés par les rapports de votre tableau de bord.
+
+<Note>
+Le règlement est distinct du [bridging](/bridging) — le règlement paie
+toujours sur la même chaîne que celle où le paiement a été reçu. Si vous
+souhaitez consolider des fonds sur une autre chaîne après le règlement,
+effectuez un bridge depuis votre portefeuille de règlement comme pour
+n'importe quel autre fonds.
+</Note>

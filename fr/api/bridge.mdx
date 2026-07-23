@@ -1,0 +1,79 @@
+---
+title: "Bridge"
+description: "Obtenez un devis et exécutez des transferts USDC/USDT inter-chaînes"
+---
+
+Tous les points de terminaison ci-dessous se trouvent sous
+`https://api.puffinmoney.com/v1/gateway/api` et requièrent l'en-tête
+`X-API-Key` — voir [Authentification](/api/authentication). Voir
+[Bridging et swaps](/bridging) pour comprendre le fonctionnement du
+routage automatique.
+
+## Obtenir un devis pour un transfert
+
+`POST /bridge/quote`
+
+| Champ | Type | Requis | Notes |
+|---|---|---|---|
+| `walletId` | string | ✓ | Portefeuille source — sa chaîne/jeton sont l'origine du transfert |
+| `toChain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, ou `BASE` |
+| `toToken` | string | ✓ | Symbole du jeton de destination |
+| `amount` | string | ✓ | Chaîne décimale, jusqu'à 8 décimales |
+| `destinationAddress` | string | ✓ | Adresse du destinataire sur `toChain` |
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`quote.route` est un identifiant de routage interne opaque — lecture
+seule, informatif ; `POST /bridge` sélectionne la même route pour les
+mêmes paramètres.
+
+## Exécuter un transfert
+
+`POST /bridge` — même corps que la requête de devis, plus un en-tête
+optionnel `Idempotency-Key`.
+
+Réserve et débite le portefeuille source de manière atomique, puis lance
+le transfert sur la route cotée. Renvoie immédiatement un transfert
+`pending` — n'attend pas la fin de l'exécution.
+
+```json
+// 201
+{
+  "bridgeTransfer": {
+    "id": "br_9f21…",
+    "route": "auto",
+    "fromChain": "SOLANA",
+    "toChain": "BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc...",
+    "status": "attesting"
+  }
+}
+```
+
+## Obtenir le statut d'un transfert
+
+`GET /bridge/:id`
+
+| Statut | Signification |
+|---|---|
+| `pending` / `source_sent` | Débité, diffusion de la transaction source en cours |
+| `attesting` | Confirmation du transfert avant qu'il puisse être livré sur la chaîne de destination |
+| `ready_to_mint` | Confirmé, livraison sur la destination en file d'attente |
+| `completed` | Fonds livrés — `destTxHash` est défini |
+| `failed` | Non abouti — consultez `metadata` pour l'erreur |
+| `refunded` | Les fonds ont été retournés au lieu d'être livrés (rare) |
+
+## Erreurs
+
+| Code | Signification |
+|---|---|
+| `bridge_not_configured` | La route sélectionnée n'est pas encore activée pour ce corridor (503) |
+| `unsupported_asset` | `toChain`/`toToken` n'est pas dans la matrice WaaS |
+| `insufficient_balance` | Le portefeuille source ne peut pas couvrir le montant + les frais |
+| `not_found` | `walletId` ou l'`id` du transfert ne vous appartient pas |

@@ -1,0 +1,59 @@
+---
+title: "एम्बेडेड चेकआउट (iframe SDK)"
+description: "puffin.js — आपकी साइट के लिए बिना डिपेंडेंसी वाला मोडल चेकआउट"
+---
+
+ग्राहकों को अपने पेज पर ही रखें। `puffin.js` होस्टेड चेकआउट को एक सैंडबॉक्स्ड
+iframe मोडल में खोलता है और कॉलबैक के ज़रिए स्टेटस बताता है।
+
+## इंस्टॉल करें
+
+```html
+<script src="https://pay.puffinmoney.com/puffin.js"></script>
+```
+
+कोई npm नहीं, कोई बिल्ड स्टेप नहीं, ~2 KB, ज़ीरो डिपेंडेंसी।
+
+## एक पेमेंट इंटेंट खोलें
+
+इंटेंट सर्वर-साइड बनाएं ([होस्टेड चेकआउट](/hosted-checkout)), id ब्राउज़र
+को पास करें:
+
+```html
+<button id="pay">25 USDC भुगतान करें</button>
+<script>
+  document.getElementById('pay').onclick = () =>
+    PuffinPay.open({
+      intentId: 'INTENT_ID_FROM_YOUR_SERVER',
+      onSuccess: (checkout) => (window.location = '/thanks'),
+      onExpired: () => alert('भुगतान की समयसीमा समाप्त — फिर से कोशिश करें'),
+      onClose:   () => console.log('ग्राहक ने चेकआउट बंद कर दिया'),
+    });
+</script>
+```
+
+## एक पेमेंट लिंक खोलें
+
+बिना किसी बैकएंड के:
+
+```js
+PuffinPay.openLink({
+  slug: 'consulting-invoice-x7k2m9',
+  amount: '150.00',            // अगर लिंक की तय राशि है तो हटा दें
+  customerEmail: 'buyer@example.com',
+  onSuccess: () => (window.location = '/thanks'),
+});
+```
+
+## API
+
+| मेथड | आर्ग्युमेंट्स |
+|---|---|
+| `PuffinPay.open(opts)` | `intentId` (ज़रूरी), `onSuccess`, `onExpired`, `onClose` |
+| `PuffinPay.openLink(opts)` | `slug` (ज़रूरी), `amount?`, `customerEmail?`, कॉलबैक + `onError` |
+| `PuffinPay.close()` | मोडल को प्रोग्रामेटिक रूप से बंद करें |
+
+<Warning>
+क्लाइंट कॉलबैक केवल UX के लिए हैं। ऑर्डर हमेशा `payment.confirmed`
+[webhook](/webhooks) या इंटेंट के सर्वर-साइड GET से ही फ़ुलफ़िल करें।
+</Warning>

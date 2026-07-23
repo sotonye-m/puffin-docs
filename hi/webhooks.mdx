@@ -1,0 +1,75 @@
+---
+title: "Webhooks"
+description: "आपके सर्वर पर भेजे गए HMAC-साइन किए हुए पेमेंट इवेंट्स"
+---
+
+## एक एंडपॉइंट जोड़ें
+
+डैशबोर्ड → **Webhooks** → अपना HTTPS URL जोड़ें और इवेंट्स चुनें (शुरुआत
+`payment.confirmed` से करें)। आपको एक साइनिंग सीक्रेट मिलेगा (`whsec_…`)।
+
+## Payload
+
+```json
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // रॉ बॉडी का HMAC-SHA256
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## सिग्नेचर वेरिफ़ाई करें
+
+किसी भी चीज़ पर भरोसा करने से पहले हमेशा वेरिफ़ाई करें:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## इवेंट्स
+
+| इवेंट | कब ट्रिगर होता है |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | पेमेंट इंटेंट को मिली राशि उसके टारगेट को कवर करती है |
+| `payment.dispute_opened` | कोई पेयर ऐसे फंड भेजने की रिपोर्ट करता है जो किसी इंटेंट से मैच नहीं हुए |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | आपकी `latePaymentPolicy` के अनुसार देर से हुए भुगतान की हैंडलिंग |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | आपके API से बनाए किसी [WaaS वॉलेट](/wallets) पर डिपॉज़िट आता है — ऊपर वाले पेमेंट-इंटेंट फ्लो से अलग |
+| `bridge.completed` / `bridge.failed` | कोई [ब्रिज ट्रांसफ़र](/bridging) फ़ाइनल स्टेटस पर पहुँचता है |
+
+`wallet.*` और `bridge.*` payload में `walletId`/`bridgeTransferId`,
+`chain`/`route`, `amount`, और संबंधित ट्रांज़ैक्शन हैश शामिल होते हैं —
+बिल्कुल उसी शेप में जैसे [Wallets](/api/wallets) और
+[Bridge](/api/bridge) के API रिस्पॉन्स में होते हैं।
+
+### डिस्प्यूट्स
+
+एक डिस्प्यूट तब खुलता है जब कोई ग्राहक, आपके चेकआउट पेज से, ऐसे फंड भेजने की
+रिपोर्ट करता है जो अपने आप कन्फ़र्म नहीं हुए — गलत राशि, गलत एड्रेस, या देर
+से भेजना। यह ग्राहक की तरफ़ से सेल्फ़-सर्विस है (उन्हें तुरंत
+`matchedWallet` / `amountCovered` / `lateByMinutes` का रिज़ल्ट मिलता है),
+और `payment.dispute_opened` आपको भी वही डिटेल देता है ताकि अगर ऑटोमैटिक
+चेक से बात नहीं बनती तो आप मैन्युअली फ़ॉलो-अप कर सकें — जैसे, थोड़ा कम
+भुगतान होने पर भी, अपनी मर्ज़ी से किसी ऑर्डर को कन्फ़र्म करना।
+
+## डिलीवरी और रीट्राई
+
+- 10 सेकंड के अंदर `2xx` रिस्पॉन्स दें; इसके अलावा कुछ भी फेलियर माना जाता
+  है।
+- हम बैकऑफ़ के साथ अधिकतम **3 बार** रीट्राई करते हैं; डिलीवरी और स्टेटस कोड
+  डैशबोर्ड में दिखते हैं।
+- हैंडलर **आइडेम्पोटेंट** होने चाहिए — `paymentIntentId` को की के तौर पर
+  इस्तेमाल करें।

@@ -1,0 +1,55 @@
+---
+title: "पेमेंट इंटेंट्स"
+description: "भुगतान बनाएं और उन्हें देखें"
+---
+
+## एक पेमेंट इंटेंट बनाएं
+
+`POST /v1/gateway/api/payment-intents`
+
+| फ़ील्ड | टाइप | ज़रूरी | नोट्स |
+|---|---|---|---|
+| `amount` | string | ✓ | डेसिमल स्ट्रिंग, 8 dp तक — कभी भी फ़्लोट नहीं |
+| `token` | string | ✓ | जैसे `USDC_SOL`, `USDT_BSC`, `USDC_BASE` |
+| `chain` | string | ✓ | `SOLANA`, `ETHEREUM`, `BASE`, `POLYGON`, `BSC`, `ARBITRUM`, `OPTIMISM`, `XDC` |
+| `customerEmail` | string | — | रसीद पर दिखता है |
+| `successUrl` | string | — | कन्फ़र्मेशन के बाद रीडायरेक्ट |
+| `cancelUrl` | string | — | कैंसल होने पर रीडायरेक्ट |
+| `metadata` | object | — | आपकी अपनी keys (ऑर्डर id, आदि) — वापस उसी रूप में मिलती हैं |
+
+```json
+// 201
+{
+  "intent": {
+    "id": "9b1f2c…",
+    "status": "PENDING",
+    "amount": "25",
+    "token": "USDC_SOL",
+    "chain": "SOLANA",
+    "walletAddress": "7xKXtg2CW…",
+    "expiresAt": "2026-07-04T12:30:00.000Z"
+  },
+  "checkoutUrl": "/pay/9b1f2c…"
+}
+```
+
+बिना भुगतान वाले इंटेंट्स बनने के 30 मिनट बाद एक्सपायर हो जाते हैं।
+
+## एक पेमेंट इंटेंट देखें
+
+`GET /v1/gateway/api/payment-intents/:id`
+
+इंटेंट को उसके वर्तमान स्टेटस के साथ लौटाता है:
+
+| स्टेटस | मतलब |
+|---|---|
+| `PENDING` | ऑन-चेन भुगतान का इंतज़ार |
+| `CONFIRMED` | भुगतान हो गया — डिपॉज़िट ≥ राशि, ऑन-चेन कन्फ़र्म |
+| `EXPIRED` | 30-मिनट की समयसीमा खत्म हो गई |
+| `CANCELLED` | आपके द्वारा कैंसल किया गया |
+
+## पब्लिक चेकआउट डेटा
+
+`GET /v1/gateway/public/checkout/:id` — बिना ऑथेंटिकेशन, चेकआउट पेज को
+पावर देता है; ब्राउज़र से कॉल करना सुरक्षित है (सिर्फ़ मर्चेंट का नाम,
+राशि, एड्रेस, और स्टेटस लौटाता है)।

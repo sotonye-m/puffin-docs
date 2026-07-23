@@ -1,0 +1,78 @@
+---
+title: "Bridge"
+description: "क्रॉस-चेन USDC/USDT ट्रांसफ़र कोट करें और एक्ज़ीक्यूट करें"
+---
+
+नीचे दिए सभी एंडपॉइंट्स `https://api.puffinmoney.com/v1/gateway/api` के
+अंदर हैं और `X-API-Key` हेडर चाहिए — देखें [ऑथेंटिकेशन](/api/authentication)।
+ऑटोमैटिक राउटिंग कैसे काम करती है, इसके लिए देखें
+[ब्रिजिंग और स्वैप](/bridging)।
+
+## एक ट्रांसफ़र कोट करें
+
+`POST /bridge/quote`
+
+| फ़ील्ड | टाइप | ज़रूरी | नोट्स |
+|---|---|---|---|
+| `walletId` | string | ✓ | सोर्स वॉलेट — इसकी चेन/टोकन ही ट्रांसफ़र का ओरिजिन है |
+| `toChain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, या `BASE` |
+| `toToken` | string | ✓ | डेस्टिनेशन टोकन सिंबल |
+| `amount` | string | ✓ | डेसिमल स्ट्रिंग, 8 dp तक |
+| `destinationAddress` | string | ✓ | `toChain` पर प्राप्तकर्ता का एड्रेस |
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`quote.route` एक अपारदर्शी इंटरनल राउटिंग आइडेंटिफ़ायर है — केवल पढ़ने के
+लिए, सिर्फ़ जानकारी के लिए; `POST /bridge` उन्हीं इनपुट्स के लिए वही रूट
+चुनता है।
+
+## एक ट्रांसफ़र एक्ज़ीक्यूट करें
+
+`POST /bridge` — कोट रिक्वेस्ट जैसी ही बॉडी, साथ में ऑप्शनल
+`Idempotency-Key` हेडर।
+
+सोर्स वॉलेट को एटॉमिकली रिज़र्व और डेबिट करता है, फिर कोटेड रूट पर ट्रांसफ़र
+शुरू करता है। तुरंत एक `pending` ट्रांसफ़र लौटाता है — यह पूरा होने का
+इंतज़ार नहीं करता।
+
+```json
+// 201
+{
+  "bridgeTransfer": {
+    "id": "br_9f21…",
+    "route": "auto",
+    "fromChain": "SOLANA",
+    "toChain": "BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc...",
+    "status": "attesting"
+  }
+}
+```
+
+## ट्रांसफ़र का स्टेटस देखें
+
+`GET /bridge/:id`
+
+| स्टेटस | मतलब |
+|---|---|
+| `pending` / `source_sent` | डेबिट हो गया, सोर्स-साइड ट्रांज़ैक्शन ब्रॉडकास्ट हो रहा है |
+| `attesting` | डेस्टिनेशन चेन पर डिलीवर होने से पहले ट्रांसफ़र कन्फ़र्म हो रहा है |
+| `ready_to_mint` | कन्फ़र्म हो गया, डेस्टिनेशन डिलीवरी क्यू में है |
+| `completed` | फंड डिलीवर हो गए — `destTxHash` सेट है |
+| `failed` | पूरा नहीं हुआ — एरर के लिए `metadata` देखें |
+| `refunded` | फंड डिलीवर होने की बजाय वापस कर दिए गए (दुर्लभ) |
+
+## एरर्स
+
+| कोड | मतलब |
+|---|---|
+| `bridge_not_configured` | चुना गया रूट इस कॉरिडोर के लिए अभी एनेबल नहीं है (503) |
+| `unsupported_asset` | `toChain`/`toToken` WaaS मैट्रिक्स में नहीं है |
+| `insufficient_balance` | सोर्स वॉलेट राशि + फ़ीस कवर नहीं कर सकता |
+| `not_found` | `walletId` या ट्रांसफ़र `id` आपका नहीं है |

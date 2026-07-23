@@ -1,0 +1,48 @@
+---
+title: "快速开始"
+description: "五分钟内完成第一笔确认支付"
+---
+
+<Steps>
+  <Step title="创建您的商户账户">
+    使用邮箱登录[商户仪表盘](https://pay.puffinmoney.com)（无需密码——我们会
+    发送验证码），然后创建您的商户资料。账户审核通常很快完成。
+  </Step>
+  <Step title="创建 API 密钥">
+    仪表盘 → **API keys** → *创建密钥*。完整密钥（`mk_live_…`）**仅显示一次**
+    ——请保存在您的服务器端，切勿放在前端代码中。
+  </Step>
+  <Step title="创建支付意图">
+    ```bash
+    curl -X POST https://api.puffinmoney.com/v1/gateway/api/payment-intents \
+      -H "X-API-Key: mk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": "25.00",
+        "token": "USDC_SOL",
+        "chain": "SOLANA",
+        "customerEmail": "buyer@example.com",
+        "successUrl": "https://yourstore.com/thanks"
+      }'
+    ```
+
+    ```json
+    {
+      "intent": { "id": "9b1f…", "status": "PENDING", "walletAddress": "7xKX…", "expiresAt": "…" },
+      "checkoutUrl": "/pay/9b1f…"
+    }
+    ```
+  </Step>
+  <Step title="将客户引导至结账页面">
+    重定向到 `https://pay.puffinmoney.com/pay/<intent-id>` —— 客户会看到金额、
+    二维码，以及在付款到账那一刻确认的实时状态。
+  </Step>
+  <Step title="获取通知">
+    添加一个 [webhook 端点](/webhooks) 并监听 `payment.confirmed`。未支付的
+    支付意图会在 30 分钟后过期。
+  </Step>
+</Steps>
+
+<Tip>
+希望服务器端零代码？使用[支付链接](/payment-links)或 [iframe SDK](/embed)。
+</Tip>

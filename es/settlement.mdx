@@ -1,0 +1,46 @@
+---
+title: "Liquidación"
+description: "Cómo llegan los pagos confirmados a tu propia billetera"
+---
+
+Puffin nunca retiene tus fondos más tiempo del necesario. En cuanto un
+intent de pago queda `CONFIRMED`, el monto (menos comisiones) se envía
+on-chain a tu propia **billetera de liquidación** — una dirección que tú
+controlas, no un saldo custodiado por Puffin que tengas que retirar
+manualmente.
+
+## Configura tu billetera de liquidación
+
+Panel → **Wallets** → define una billetera de liquidación por red. Hasta
+que definas una para una red determinada, los pagos en esa red se liquidan
+en estado `held` y quedan en cola de forma segura — nada se pierde, se
+liberan automáticamente en cuanto agregas una billetera.
+
+## Tiempos
+
+Por defecto, la liquidación ocurre en cuanto se confirma un pago. Si
+prefieres agrupar los pagos (fin de día, para conciliación, etc.), tu
+cuenta puede configurarse con un retraso de liquidación — habla con
+soporte para configurar uno para tu cuenta.
+
+## Seguimiento de la liquidación
+
+Cada intent de pago tiene su propio `settlementStatus`:
+
+| Estado | Significado |
+|---|---|
+| `pending` / `scheduled` | Confirmado, esperando cualquier retraso configurado |
+| `settled` | Fondos enviados a tu billetera de liquidación — `settledAt` y `settleAmount` quedan definidos |
+| `held` | Aún no hay billetera de liquidación configurada para esta red |
+| `failed` | La transferencia on-chain no se completó — soporte es notificado automáticamente |
+
+`feeAmount` y `settleAmount` en el intent muestran exactamente qué se
+descontó y qué recibiste — los mismos números que usan los reportes de tu
+panel.
+
+<Note>
+La liquidación es independiente del [bridging](/bridging) — la liquidación
+siempre paga en la misma red donde se recibió el pago. Si quieres
+consolidar fondos en otra red después de la liquidación, haz bridge desde
+tu billetera de liquidación como lo harías con cualquier otro fondo.
+</Note>

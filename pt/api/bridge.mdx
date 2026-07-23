@@ -1,0 +1,79 @@
+---
+title: "Bridge"
+description: "Cote e execute transferências de USDC/USDT entre redes"
+---
+
+Todos os endpoints abaixo estão sob
+`https://api.puffinmoney.com/v1/gateway/api` e exigem o cabeçalho
+`X-API-Key` — veja [Autenticação](/api/authentication). Veja
+[Bridging e swaps](/bridging) para entender como funciona o roteamento
+automático.
+
+## Cotar uma transferência
+
+`POST /bridge/quote`
+
+| Campo | Tipo | Obrigatório | Notas |
+|---|---|---|---|
+| `walletId` | string | ✓ | Carteira de origem — sua rede/token são a origem da transferência |
+| `toChain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, ou `BASE` |
+| `toToken` | string | ✓ | Símbolo do token de destino |
+| `amount` | string | ✓ | String decimal, até 8 casas decimais |
+| `destinationAddress` | string | ✓ | Endereço do destinatário em `toChain` |
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`quote.route` é um identificador de roteamento interno opaco — somente
+leitura, informativo; `POST /bridge` seleciona a mesma rota para as
+mesmas entradas.
+
+## Executar uma transferência
+
+`POST /bridge` — mesmo corpo da requisição de cotação, mais um cabeçalho
+opcional `Idempotency-Key`.
+
+Reserva e debita a carteira de origem de forma atômica, depois inicia a
+transferência na rota cotada. Retorna imediatamente uma transferência
+`pending` — não espera a conclusão.
+
+```json
+// 201
+{
+  "bridgeTransfer": {
+    "id": "br_9f21…",
+    "route": "auto",
+    "fromChain": "SOLANA",
+    "toChain": "BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc...",
+    "status": "attesting"
+  }
+}
+```
+
+## Consultar o status de uma transferência
+
+`GET /bridge/:id`
+
+| Status | Significado |
+|---|---|
+| `pending` / `source_sent` | Debitado, transmitindo a transação de origem |
+| `attesting` | Confirmando a transferência antes que possa ser entregue na rede de destino |
+| `ready_to_mint` | Confirmado, entrega no destino na fila |
+| `completed` | Fundos entregues — `destTxHash` está definido |
+| `failed` | Não foi concluído — veja `metadata` para o erro |
+| `refunded` | Fundos foram devolvidos em vez de entregues (raro) |
+
+## Erros
+
+| Código | Significado |
+|---|---|
+| `bridge_not_configured` | A rota selecionada ainda não está habilitada para esse corredor (503) |
+| `unsupported_asset` | `toChain`/`toToken` não está na matriz WaaS |
+| `insufficient_balance` | A carteira de origem não consegue cobrir o valor + taxas |
+| `not_found` | `walletId` ou o `id` da transferência não é seu |

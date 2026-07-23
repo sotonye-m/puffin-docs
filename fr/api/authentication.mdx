@@ -1,0 +1,41 @@
+---
+title: "Authentification"
+description: "Clés API, limites de taux et erreurs"
+---
+
+## Clés API
+
+Les points de terminaison serveur à serveur s'authentifient avec l'en-tête
+`X-API-Key` :
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/payment-intents/9b1f... \
+  -H "X-API-Key: mk_live_..."
+```
+
+- Les clés ne sont affichées **qu'une seule fois** à la création et sont
+  stockées hachées (SHA-256).
+- Révoquez et faites tourner à tout moment depuis le tableau de bord
+  (rôle `DEVELOPER` ou supérieur).
+- N'utilisez jamais une clé API dans du code navigateur ou mobile — côté
+  client, utilisez les [liens de paiement](/payment-links) ou le
+  [SDK iframe](/embed).
+
+## Limites de taux
+
+120 requêtes/minute par IP. Les réponses `429` incluent les en-têtes
+standards `X-RateLimit-*`.
+
+## Erreurs
+
+```json
+{ "error": { "code": "invalid_api_key", "message": "Invalid or revoked API key" } }
+```
+
+| Code | Signification |
+|---|---|
+| `missing_api_key` / `invalid_api_key` | En-tête absent, révoqué, ou marchand non actif |
+| `unsupported_asset` | Paire jeton/chaîne non prise en charge |
+| `validation_error` | Corps mal formé — le message indique le champ concerné |
+| `not_found` | La ressource n'existe pas ou ne vous appartient pas |
+| `plan_limit` | Quota de portefeuilles/équipe atteint — mettez à niveau votre forfait |

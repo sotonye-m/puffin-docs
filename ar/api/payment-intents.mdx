@@ -1,0 +1,55 @@
+---
+title: "نوايا الدفع"
+description: "أنشئ واسترجع المدفوعات"
+---
+
+## أنشئ نية دفع
+
+`POST /v1/gateway/api/payment-intents`
+
+| الحقل | النوع | مطلوب | ملاحظات |
+|---|---|---|---|
+| `amount` | string | ✓ | سلسلة عشرية، حتى 8 منازل عشرية — أبدًا رقم عائم (float) |
+| `token` | string | ✓ | مثل `USDC_SOL`، `USDT_BSC`، `USDC_BASE` |
+| `chain` | string | ✓ | `SOLANA`، `ETHEREUM`، `BASE`، `POLYGON`، `BSC`، `ARBITRUM`، `OPTIMISM`، `XDC` |
+| `customerEmail` | string | — | يظهر على الإيصال |
+| `successUrl` | string | — | إعادة التوجيه بعد التأكيد |
+| `cancelUrl` | string | — | إعادة التوجيه عند الإلغاء |
+| `metadata` | object | — | مفاتيحك الخاصة (رقم الطلب، إلخ) — تُعاد كما هي |
+
+```json
+// 201
+{
+  "intent": {
+    "id": "9b1f2c…",
+    "status": "PENDING",
+    "amount": "25",
+    "token": "USDC_SOL",
+    "chain": "SOLANA",
+    "walletAddress": "7xKXtg2CW…",
+    "expiresAt": "2026-07-04T12:30:00.000Z"
+  },
+  "checkoutUrl": "/pay/9b1f2c…"
+}
+```
+
+تنتهي صلاحية النوايا بعد 30 دقيقة من إنشائها إذا لم تُدفع.
+
+## استرجع نية دفع
+
+`GET /v1/gateway/api/payment-intents/:id`
+
+يُعيد النية بحالتها الحالية:
+
+| الحالة | المعنى |
+|---|---|
+| `PENDING` | بانتظار الدفع على السلسلة |
+| `CONFIRMED` | مدفوعة — الإيداع ≥ المبلغ مؤكد على السلسلة |
+| `EXPIRED` | انقضت مهلة الـ 30 دقيقة |
+| `CANCELLED` | أُلغيت من قبلك |
+
+## بيانات الدفع العامة
+
+`GET /v1/gateway/public/checkout/:id` — بدون مصادقة، يُشغّل صفحة الدفع؛
+آمن للاستدعاء من المتصفحات (يُعيد فقط اسم التاجر والمبلغ والعنوان
+والحالة).

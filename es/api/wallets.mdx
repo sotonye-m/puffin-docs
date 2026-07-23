@@ -1,0 +1,77 @@
+---
+title: "Wallets"
+description: "Crea, financia y administra billeteras WaaS"
+---
+
+Todos los endpoints a continuación están bajo
+`https://api.puffinmoney.com/v1/gateway/api` y requieren el encabezado
+`X-API-Key` — ver [Autenticación](/api/authentication). Ver
+[Wallet-as-a-Service](/wallets) para una guía paso a paso.
+
+## Crear una billetera
+
+`POST /wallets`
+
+| Campo | Tipo | Obligatorio | Notas |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, o `BASE` |
+| `token` | string | ✓ | ej. `USDC_SOL`, `USDT_POLYGON`, `USDC_BSC`, `USDC_BASE` — ver `/wallets` para la matriz completa |
+| `label` | string | — | Hasta 40 caracteres, tu propia referencia |
+
+Soporta el mismo encabezado `Idempotency-Key` que los intents de pago.
+Devuelve `402 plan_limit` si alcanzaste el límite de billeteras de tu
+plan, `400 unsupported_asset` si el par red/token no está en la matriz
+WaaS (el cuerpo de la respuesta incluye la matriz `supported` actual para
+que no tengas que codificarla tú mismo).
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## Listar billeteras
+
+`GET /wallets` — devuelve todas las billeteras que creaste con esta API,
+más la matriz `supported` actual de redes/tokens.
+
+## Consultar una billetera
+
+`GET /wallets/:id`
+
+## Consultar un saldo
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Listar depósitos
+
+`GET /wallets/:id/deposits` — hasta los 50 depósitos más recientes a esta
+billetera.
+
+## Enviar un retiro
+
+`POST /wallets/:id/withdrawals`
+
+| Campo | Tipo | Obligatorio | Notas |
+|---|---|---|---|
+| `toAddress` | string | ✓ | Dirección destino en la misma red de la billetera |
+| `amount` | string | ✓ | Cadena decimal, hasta 8 decimales |
+| `note` | string | — | Hasta 140 caracteres, tu propia referencia |
+
+Debita la billetera de inmediato (reservado antes de transmitir — no
+puedes hacer doble gasto compitiendo con dos llamadas de retiro). Las
+comisiones se cobran según tu tarifa de capacidad `waas` — ver
+[Precios](/teams-and-plans#usage-based-pricing).
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+¿Necesitas mover fondos a una **red distinta**, no solo a otra dirección en
+la misma red? Usa [Bridge](/api/bridge) en su lugar.
+</Note>

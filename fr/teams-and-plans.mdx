@@ -1,0 +1,68 @@
+---
+title: "Équipes et forfaits"
+description: "Rôles, routage des notifications et niveaux d'abonnement"
+---
+
+## Rôles d'équipe (RBAC)
+
+Invitez des coéquipiers depuis Tableau de bord → **Team**. Les membres se
+connectent avec leur e-mail — sans mot de passe.
+
+| Rôle | Peut faire |
+|---|---|
+| `OWNER` | Tout, y compris la facturation et la gestion d'équipe |
+| `ADMIN` | Tout sauf la facturation |
+| `FINANCE` | Paiements, retraits, portefeuilles, rapports |
+| `DEVELOPER` | Clés API et webhooks |
+| `SUPPORT` | Lecture seule des paiements et clients |
+| `VIEWER` | Lecture seule |
+
+## Routage des notifications
+
+Chaque membre dispose de commutateurs e-mail par événement —
+`transactions`, `deposits`, `payouts`, `subscription`, `security`,
+`reports`. Votre responsable financier reçoit les e-mails de retrait ;
+votre ingénieur reçoit les échecs de webhook ; personne n'est noyé sous
+des e-mails qui ne le concernent pas.
+
+## Niveaux d'abonnement
+
+| Forfait | Conçu pour | Inclut |
+|---|---|---|
+| **Starter** | Essayer Puffin | Liens de paiement, checkout hébergé |
+| **Growth** | Intégrations en production | Tout ce qui est dans Starter, plus l'API, les webhooks et le SDK iframe |
+| **Scale** | Marchands à fort volume | Tout ce qui est dans Growth, plus un support dédié et un règlement personnalisé |
+
+Chaque niveau augmente vos limites de portefeuilles et de sièges d'équipe,
+et réduit vos frais de passerelle — consultez la tarification et les
+limites actuelles dans **Tableau de bord → Billing**, ou
+`GET /v1/gateway/merchants/me/fees` pour les chiffres exacts de votre
+compte. Des tarifs personnalisés sont disponibles pour les marchands à
+fort volume — contactez le support pour en discuter.
+
+## Portefeuilles marchands
+
+Créez des portefeuilles de collecte sur n'importe quelle chaîne prise en
+charge (Tableau de bord → **Wallets**), jusqu'à la limite de votre
+forfait. Les paiements de la passerelle utilisent toujours de nouvelles
+adresses à usage unique, quel que soit le nombre de vos portefeuilles.
+
+## Tarification à l'usage
+
+La tarification est définie **par capacité** — Gateway (intentions de
+paiement), WaaS ([portefeuilles](/wallets)) et Swap
+([bridging](/bridging)) — et non un tarif unique pour tout. Chaque
+capacité comporte deux composants indépendants :
+
+| Composant | Ce qu'il couvre |
+|---|---|
+| **Platform** | La marge de Puffin |
+| **Gas** | Récupère les frais de gas réseau que les stations de gas de Puffin paient en votre nom |
+
+Chaque composant peut comporter un pourcentage, des frais fixes, ou les
+deux, avec des plafonds minimum/maximum optionnels. Votre tarif effectif
+est celui par défaut de votre forfait, avec toute personnalisation définie
+par votre gestionnaire de compte ajoutée par-dessus. Consultez
+`GET /v1/gateway/merchants/me/fees` (session du tableau de bord) pour vos
+chiffres exacts actuels par capacité, ou demandez au support si vous
+négociez un tarif personnalisé.

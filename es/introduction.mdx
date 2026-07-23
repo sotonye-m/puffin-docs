@@ -1,0 +1,65 @@
+---
+title: "Introducción"
+description: "Acepta pagos en stablecoins en todas las principales redes, liquidados en billeteras que tú controlas"
+---
+
+**Puffin Pay** es la pasarela de pagos en stablecoins de MacLeod Technologies.
+Ofrece a tus clientes un checkout que acepta USDC, USDT, EURC y más — en
+Solana, Ethereum, Base, Polygon, BSC, Arbitrum, Optimism o XDC — y recibe la
+confirmación del pago a tu manera: un webhook firmado, un panel en tiempo
+real y un recibo que tu cliente puede conservar.
+
+Tú eliges qué tan profunda quieres la integración. Comparte un enlace sin
+código, agrega un checkout modal a tu sitio con una sola etiqueta de script,
+o controla todo el flujo desde tu servidor con una sola llamada a la API —
+la experiencia de pago es la misma página de checkout alojada en cualquiera
+de los casos.
+
+## Formas de integrarte
+
+<CardGroup cols={2}>
+  <Card title="Enlaces de pago" icon="link" href="/payment-links">
+    Sin código. Crea un enlace en el panel y compártelo donde quieras.
+  </Card>
+  <Card title="Checkout alojado" icon="globe" href="/hosted-checkout">
+    Una llamada a la API crea el pago; redirige a tu cliente a nuestra
+    página de checkout.
+  </Card>
+  <Card title="Integrado (SDK iframe)" icon="code" href="/embed">
+    Agrega `puffin.js` a tu sitio y abre el checkout en un modal — tus
+    clientes nunca salen de tu página.
+  </Card>
+  <Card title="Wallet-as-a-Service" icon="wallet" href="/wallets">
+    ¿Necesitas billeteras permanentes en lugar de pagos puntuales? Crea y
+    administra billeteras USDC/USDT en varias redes directamente por la API.
+  </Card>
+</CardGroup>
+
+¿Tienes fondos repartidos en más redes de las que quisieras? Consulta
+[Bridging y swaps](/bridging) — un solo endpoint mueve valor entre redes y
+activos, y nosotros elegimos automáticamente la ruta más rápida y segura.
+
+## Cómo funciona un pago
+
+1. Creas un **intent de pago** (monto + token + red).
+2. Puffin genera una **dirección de depósito nueva** para ese pago.
+3. Tu cliente paga; nosotros lo detectamos y confirmamos en la cadena.
+4. El intent pasa a `CONFIRMED`, tu webhook se dispara (firmado con HMAC), y
+   el panel se actualiza en tiempo real.
+
+Cada dirección de pago se usa una sola vez — sin heurísticas de coincidencia
+de montos, sin pagos cruzados.
+
+## Cómo recibes tus fondos
+
+Los pagos confirmados se liquidan en una billetera que tú controlas, según
+el calendario configurado en tu cuenta — consulta [Liquidación](/settlement)
+para ver cómo funciona y cómo apuntarlo a tu propia dirección.
+
+## Precios
+
+Las comisiones se definen por capacidad (pagos, billeteras, bridging) según
+tu plan, con tarifas personalizadas disponibles a medida que creces —
+consulta [Equipos y planes](/teams-and-plans) para entender cómo se
+estructuran los precios, o revisa `GET /v1/gateway/merchants/me/fees` para
+ver las cifras actuales de tu cuenta.

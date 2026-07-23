@@ -1,0 +1,54 @@
+---
+title: "托管结账（自托管集成）"
+description: "从您的服务器创建支付意图，重定向到我们的结账页面"
+---
+
+经典的服务器驱动流程：您的后端使用 API 密钥创建支付意图，然后将客户重定向到
+托管结账页面。
+
+## 流程
+
+```mermaid
+sequenceDiagram
+  participant C as 客户
+  participant S as 您的服务器
+  participant B as Puffin Pay
+  C->>S: 点击「使用加密货币支付」
+  S->>B: POST /v1/gateway/api/payment-intents (X-API-Key)
+  B-->>S: { intent, checkoutUrl }
+  S-->>C: 302 → pay.puffinmoney.com/pay/:id
+  C->>B: 将稳定币发送到全新地址
+  B-->>S: Webhook payment.confirmed（HMAC 签名）
+  B-->>C: 重定向到您的 successUrl
+```
+
+## 创建支付意图
+
+```js
+const res = await fetch('https://api.puffinmoney.com/v1/gateway/api/payment-intents', {
+  method: 'POST',
+  headers: { 'X-API-Key': process.env.PUFFIN_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    amount: '99.00',
+    token: 'USDC_BASE',
+    chain: 'BASE',
+    successUrl: 'https://yourstore.com/orders/123/thanks',
+    metadata: { orderId: '123' },
+  }),
+});
+const { intent, checkoutUrl } = await res.json();
+```
+
+## 轮询或验证
+
+```bash
+GET /v1/gateway/api/payment-intents/:id   # X-API-Key
+```
+
+状态：`PENDING → CONFIRMED | EXPIRED | CANCELLED`。始终将 **webhook**
+（或此 GET 请求）作为可信来源——绝不要信任浏览器端的状态。
+
+## 支持的资产
+
+Puffin 支持的所有链上的所有稳定币：Solana、Ethereum、Base、Polygon、BSC、
+Arbitrum、Optimism、XDC —— `GET /v1/wallets/supported` 列出当前完整矩阵。

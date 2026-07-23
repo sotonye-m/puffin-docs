@@ -1,0 +1,52 @@
+---
+title: "क्विकस्टार्ट"
+description: "पाँच मिनट से कम में आपका पहला कन्फ़र्म भुगतान"
+---
+
+<Steps>
+  <Step title="अपना मर्चेंट अकाउंट बनाएं">
+    अपने ईमेल से [मर्चेंट डैशबोर्ड](https://pay.puffinmoney.com) में साइन इन करें
+    (पासवर्ड-रहित — हम एक कोड भेजते हैं), फिर अपनी बिज़नेस प्रोफ़ाइल बनाएं।
+    अकाउंट जल्दी अप्रूव हो जाते हैं।
+  </Step>
+  <Step title="एक API key बनाएं">
+    डैशबोर्ड → **API keys** → *Create key*। पूरी key (`mk_live_…`) **एक ही बार**
+    दिखाई जाती है — इसे सर्वर-साइड पर सुरक्षित रखें, कभी भी फ्रंटएंड कोड में
+    नहीं।
+  </Step>
+  <Step title="एक पेमेंट इंटेंट बनाएं">
+    ```bash
+    curl -X POST https://api.puffinmoney.com/v1/gateway/api/payment-intents \
+      -H "X-API-Key: mk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": "25.00",
+        "token": "USDC_SOL",
+        "chain": "SOLANA",
+        "customerEmail": "buyer@example.com",
+        "successUrl": "https://yourstore.com/thanks"
+      }'
+    ```
+
+    ```json
+    {
+      "intent": { "id": "9b1f…", "status": "PENDING", "walletAddress": "7xKX…", "expiresAt": "…" },
+      "checkoutUrl": "/pay/9b1f…"
+    }
+    ```
+  </Step>
+  <Step title="अपने ग्राहक को चेकआउट पर भेजें">
+    `https://pay.puffinmoney.com/pay/<intent-id>` पर रीडायरेक्ट करें — उन्हें
+    राशि, एक QR कोड, और एक लाइव स्टेटस दिखेगा जो भुगतान पहुँचते ही कन्फ़र्म
+    हो जाता है।
+  </Step>
+  <Step title="नोटिफ़िकेशन पाएं">
+    एक [webhook एंडपॉइंट](/webhooks) जोड़ें और `payment.confirmed` सुनें।
+    बिना भुगतान वाले पेमेंट इंटेंट 30 मिनट बाद एक्सपायर हो जाते हैं।
+  </Step>
+</Steps>
+
+<Tip>
+बैकएंड में बिल्कुल कोड नहीं चाहिए? [पेमेंट लिंक](/payment-links) या
+[iframe SDK](/embed) इस्तेमाल करें।
+</Tip>

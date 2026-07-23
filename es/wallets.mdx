@@ -1,0 +1,95 @@
+---
+title: "Wallet-as-a-Service"
+description: "Crea y administra billeteras USDC/USDT en cuatro redes, con una sola API"
+---
+
+La API de Wallet-as-a-Service (WaaS) de Puffin te permite crear y operar
+billeteras de stablecoins de forma programática — sin gestión de claves,
+sin infraestructura específica por red, sin construir tu propia custodia.
+Es la misma `X-API-Key` que ya usas para [intents de pago](/api/payment-intents).
+
+<Note>
+WaaS se lanza inicialmente con **USDC y USDT en Solana, Polygon, BSC y
+Base** (Base es solo USDC — no existe un contrato canónico de Tether ahí).
+Para cobrar cualquier red/token que Puffin soporte como pago puntual, usa
+[intents de pago](/api/payment-intents) en su lugar.
+</Note>
+
+## Qué obtienes
+
+<CardGroup cols={2}>
+  <Card title="Billeteras bajo demanda" icon="wallet">
+    `POST /v1/gateway/api/wallets` genera una billetera para un par
+    red + token y devuelve su dirección de inmediato.
+  </Card>
+  <Card title="Saldos y depósitos" icon="chart-line">
+    Consulta el saldo en vivo y el historial de depósitos por billetera —
+    sin necesitar un explorador de blockchain.
+  </Card>
+  <Card title="Retiros" icon="paper-plane">
+    Envía desde cualquier billetera que hayas creado a una dirección
+    externa, con la misma semántica de clave de idempotencia que los
+    intents de pago.
+  </Card>
+  <Card title="Webhooks de depósito" icon="bell">
+    `wallet.deposit.detected` y `wallet.deposit.confirmed` se disparan en
+    el momento en que llegan los fondos — ver [Webhooks](/webhooks).
+  </Card>
+</CardGroup>
+
+## Crear una billetera
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+La creación de billeteras está sujeta al límite de tu plan, igual que las
+billeteras que ya podrías tener creadas desde el panel.
+
+## Consultar un saldo
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Enviar un retiro
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+El encabezado `Idempotency-Key` funciona igual que en los intents de pago —
+repetir la misma key devuelve la respuesta original en lugar de enviar dos
+veces.
+
+## Referencia completa
+
+Consulta la [referencia de la API de Wallets](/api/wallets) para cada campo
+y código de error, y [Bridging y swaps](/bridging) si necesitas mover
+fondos entre redes en lugar de solo enviarlos a una dirección en la misma
+red.

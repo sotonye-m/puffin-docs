@@ -1,0 +1,47 @@
+---
+title: "Liquidação"
+description: "Como pagamentos confirmados chegam até a sua própria carteira"
+---
+
+A Puffin nunca retém seus fundos por mais tempo do que o necessário.
+Assim que uma intenção de pagamento fica `CONFIRMED`, o valor (menos
+taxas) é enviado on-chain para sua própria **carteira de liquidação** —
+um endereço que você controla, não um saldo custodiado pela Puffin que
+você precisa sacar manualmente.
+
+## Configure sua carteira de liquidação
+
+Painel → **Wallets** → defina uma carteira de liquidação por rede. Até
+que uma seja definida para uma determinada rede, os pagamentos nessa rede
+são liquidados em estado `held` e ficam em fila com segurança — nada se
+perde, e são liberados automaticamente assim que você adiciona uma
+carteira.
+
+## Prazos
+
+Por padrão, a liquidação acontece assim que um pagamento é confirmado. Se
+preferir agrupar os repasses (fim do dia, para conciliação, etc.), sua
+conta pode ser configurada com um atraso de liquidação — fale com o
+suporte para configurar um para sua conta.
+
+## Acompanhando a liquidação
+
+Cada intenção de pagamento tem seu próprio `settlementStatus`:
+
+| Status | Significado |
+|---|---|
+| `pending` / `scheduled` | Confirmado, aguardando qualquer atraso configurado |
+| `settled` | Fundos enviados para sua carteira de liquidação — `settledAt` e `settleAmount` estão definidos |
+| `held` | Ainda não há carteira de liquidação configurada para esta rede |
+| `failed` | A transferência on-chain não foi concluída — o suporte é notificado automaticamente |
+
+`feeAmount` e `settleAmount` na intenção mostram exatamente o que foi
+deduzido e o que você recebeu — os mesmos números usados nos relatórios
+do seu painel.
+
+<Note>
+A liquidação é separada do [bridging](/bridging) — a liquidação sempre
+paga na mesma rede em que o pagamento foi recebido. Se quiser consolidar
+fundos em outra rede depois da liquidação, faça um bridge a partir da sua
+carteira de liquidação como faria com qualquer outro fundo.
+</Note>

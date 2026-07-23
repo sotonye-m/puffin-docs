@@ -1,0 +1,92 @@
+---
+title: "Wallet-as-a-Service"
+description: "أنشئ وأدر محافظ USDC/USDT عبر أربع شبكات، بواجهة برمجة تطبيقات واحدة"
+---
+
+تتيح لك واجهة برمجة تطبيقات Wallet-as-a-Service (WaaS) من Puffin إنشاء
+وتشغيل محافظ العملات المستقرة برمجيًا — دون إدارة مفاتيح، ودون بنية تحتية
+خاصة بكل شبكة، ودون بناء نظام حفظ خاص بك. إنه نفس `X-API-Key` الذي تستخدمه
+بالفعل لـ [نوايا الدفع](/api/payment-intents).
+
+<Note>
+تنطلق WaaS في البداية مقتصرة على **USDC وUSDT على Solana وPolygon وBSC
+وBase** (Base تدعم USDC فقط — لا يوجد عقد USDT رسمي صادر عن Tether هناك).
+لتحصيل أي شبكة/عملة تدعمها Puffin كدفعة لمرة واحدة، استخدم
+[نوايا الدفع](/api/payment-intents) بدلًا من ذلك.
+</Note>
+
+## ما الذي تحصل عليه
+
+<CardGroup cols={2}>
+  <Card title="محافظ عند الطلب" icon="wallet">
+    ينشئ `POST /v1/gateway/api/wallets` محفظة لزوج شبكة + عملة ويعيد
+    عنوانها فورًا.
+  </Card>
+  <Card title="الأرصدة والإيداعات" icon="chart-line">
+    استعلم عن الرصيد الحي وسجل الإيداعات لكل محفظة — دون الحاجة إلى مستكشف
+    بلوكتشين.
+  </Card>
+  <Card title="السحوبات" icon="paper-plane">
+    أرسل من أي محفظة أنشأتها إلى عنوان خارجي، بنفس آلية مفتاح عدم التكرار
+    (idempotency) المستخدمة في نوايا الدفع.
+  </Card>
+  <Card title="webhooks الإيداع" icon="bell">
+    يُطلق `wallet.deposit.detected` و`wallet.deposit.confirmed` لحظة وصول
+    الأموال — راجع [Webhooks](/webhooks).
+  </Card>
+</CardGroup>
+
+## أنشئ محفظة
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+يخضع إنشاء المحافظ لحد المحافظ في خطتك، تمامًا كالمحافظ التي قد تكون أنشأتها
+بالفعل من لوحة التحكم.
+
+## تحقق من رصيد
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## أرسل سحبًا
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+يعمل رأس `Idempotency-Key` تمامًا كما في نوايا الدفع — إعادة استخدام نفس
+المفتاح تُعيد الاستجابة الأصلية بدلًا من الإرسال مرتين.
+
+## المرجع الكامل
+
+راجع [مرجع واجهة برمجة تطبيقات المحافظ](/api/wallets) لكل حقل وكود خطأ،
+و[الجسور والمبادلات](/bridging) إذا احتجت نقل أموال بين الشبكات وليس فقط
+إلى عنوان آخر على نفس الشبكة.

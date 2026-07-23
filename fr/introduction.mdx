@@ -1,0 +1,70 @@
+---
+title: "Introduction"
+description: "Acceptez les paiements en stablecoins sur toutes les grandes chaînes, réglés sur des portefeuilles que vous contrôlez"
+---
+
+**Puffin Pay** est la passerelle de paiement en stablecoins de MacLeod
+Technologies. Offrez à vos clients un checkout qui accepte l'USDC, l'USDT,
+l'EURC et plus encore — sur Solana, Ethereum, Base, Polygon, BSC, Arbitrum,
+Optimism ou XDC — et recevez la confirmation du paiement à votre façon :
+un webhook signé, un tableau de bord en temps réel, et un reçu que votre
+client peut conserver.
+
+Vous choisissez la profondeur de l'intégration. Partagez un lien sans code,
+ajoutez une fenêtre de paiement modale à votre site avec une seule balise
+script, ou pilotez tout le flux depuis votre serveur avec un seul appel
+API — l'expérience de paiement reste la même page de checkout hébergée
+dans tous les cas.
+
+## Modes d'intégration
+
+<CardGroup cols={2}>
+  <Card title="Liens de paiement" icon="link" href="/payment-links">
+    Zéro code. Créez un lien dans le tableau de bord, partagez-le partout.
+  </Card>
+  <Card title="Checkout hébergé" icon="globe" href="/hosted-checkout">
+    Un appel API crée le paiement ; redirigez votre client vers notre page
+    de checkout.
+  </Card>
+  <Card title="Intégré (SDK iframe)" icon="code" href="/embed">
+    Ajoutez `puffin.js` à votre site et ouvrez le checkout dans une
+    fenêtre modale — vos clients ne quittent jamais votre page.
+  </Card>
+  <Card title="Wallet-as-a-Service" icon="wallet" href="/wallets">
+    Besoin de portefeuilles permanents plutôt que de paiements ponctuels ?
+    Créez et gérez des portefeuilles USDC/USDT sur plusieurs chaînes
+    directement via l'API.
+  </Card>
+</CardGroup>
+
+Des fonds répartis sur plus de chaînes que vous ne le souhaiteriez ?
+Consultez [Bridging et swaps](/bridging) — un seul point d'accès déplace
+la valeur entre les chaînes et les actifs, et nous choisissons
+automatiquement la route la plus rapide.
+
+## Comment fonctionne un paiement
+
+1. Vous créez une **intention de paiement** (montant + jeton + chaîne).
+2. Puffin génère une **nouvelle adresse de dépôt** pour ce paiement.
+3. Votre client paie ; nous le détectons et le confirmons sur la chaîne.
+4. L'intention passe à `CONFIRMED`, votre webhook se déclenche (signé HMAC),
+   et le tableau de bord se met à jour en temps réel.
+
+Chaque adresse de paiement n'est utilisée qu'une seule fois — aucune
+heuristique de correspondance de montant, aucun paiement croisé.
+
+## Comment vous êtes payé
+
+Les paiements confirmés sont réglés sur un portefeuille que vous contrôlez,
+selon le calendrier configuré pour votre compte — consultez
+[Règlement](/settlement) pour voir comment cela fonctionne et comment le
+diriger vers votre propre adresse.
+
+## Tarification
+
+Les frais sont définis par capacité (paiements, portefeuilles, bridging)
+selon votre forfait, avec des tarifs personnalisés disponibles à mesure que
+vous grandissez — consultez [Équipes et forfaits](/teams-and-plans) pour
+comprendre la structure tarifaire, ou vérifiez
+`GET /v1/gateway/merchants/me/fees` pour les chiffres actuels de votre
+compte.

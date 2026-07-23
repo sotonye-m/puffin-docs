@@ -1,0 +1,87 @@
+---
+title: "跨链桥接与兑换"
+description: "通过一个 API 在 Solana、Polygon、BSC 和 Base 之间转移 USDC 和 USDT"
+---
+
+对于您要转移的具体资产对，Puffin 会自动选择最快、最安全的路径进行跨链
+转账——您只需调用一个端点，路径的选择与执行都由我们完成。
+
+## 工作原理
+
+<CardGroup cols={2}>
+  <Card title="智能路由" icon="bolt">
+    每笔转账都会根据涉及的资产和链进行评估，并按能最快、最可靠完成的方式
+    路由——没有封装资产，也无需自行计算流动性池的滑点。
+  </Card>
+  <Card title="始终只有一个端点" icon="shuffle">
+    同资产跨链转账和跨资产兑换都通过同一个调用完成。您永远不需要自己选择
+    具体机制。
+  </Card>
+</CardGroup>
+
+`POST /bridge/quote` 会在您确认之前告知网络费用和预计到账时间——响应中的
+`route` 是仅供支持排查使用的内部路由标识符，客户端无需据此做任何判断。
+
+## 先报价，再执行
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
+  -H "X-API-Key: mk_live_..." \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`ourFee` 是 Puffin 在报价网络费用之上收取的平台费 + gas 恢复费——具体如何
+配置请参见[定价](/teams-and-plans#usage-based-pricing)。准备好后：
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: bridge_2026-07-22_001" \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+这会立即扣除源钱包的资金，并返回一个可供您轮询的 `bridgeTransfer`——或者
+直接等待 webhook 通知。
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
+  -H "X-API-Key: mk_live_..."
+```
+
+| 状态 | 含义 |
+|---|---|
+| `pending` / `source_sent` | 已扣款，正在广播源端交易 |
+| `attesting` | 正在确认转账，随后才能在目标链上完成交付 |
+| `completed` | 资金已交付到 `toChain` 上的 `destinationAddress` |
+| `failed` / `refunded` | 未能完成——详情请查看 `metadata` |
+
+## Webhooks
+
+订阅 `bridge.completed` 和 `bridge.failed`——完整的 payload 结构请参见
+[Webhooks](/webhooks)。
+
+<Note>
+目前跨链桥接仅支持 USDC/USDT，与[钱包即服务](/wallets)的链/代币矩阵一致
+（Solana、Polygon、BSC、Base）。对未配置路径的桥接请求会返回
+`bridge_not_configured`——这是我们这边在开通某条通道过程中的运营性限制，
+无法通过客户端方式绕过。
+</Note>

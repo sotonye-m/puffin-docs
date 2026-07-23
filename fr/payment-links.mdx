@@ -1,0 +1,44 @@
+---
+title: "Liens de paiement"
+description: "Partagez une URL, soyez payé — sans code requis"
+---
+
+Les liens de paiement sont des URL réutilisables que vous créez dans le
+tableau de bord. Chaque visite génère une nouvelle intention de paiement,
+donc un seul lien peut collecter un nombre illimité de paiements.
+
+## Créer un lien
+
+1. Tableau de bord → **Payment links** → définissez un titre, choisissez
+   le jeton et la chaîne.
+2. Fixez un montant, ou laissez-le vide pour que le client choisisse (dons,
+   pourboires, paiement libre).
+3. Partagez `https://pay.puffinmoney.com/link/<slug>` — par chat, facture,
+   signature d'e-mail, QR code sur un reçu, n'importe où.
+
+## Utilisation programmatique
+
+Créez une intention à partir d'un lien (point de terminaison public, sans
+clé API) :
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/public/links/<slug>/intent \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": "10.00", "customerEmail": "buyer@example.com" }'
+```
+
+```json
+{ "intentId": "9b1f…" }
+```
+
+Puis envoyez le client vers `/pay/<intentId>` ou ouvrez-le avec le
+[SDK iframe](/embed) :
+
+```js
+PuffinPay.openLink({ slug: 'consulting-invoice-x7k2m9', amount: '150.00' });
+```
+
+<Note>
+Le montant n'est requis dans la requête que lorsque le lien n'a pas de
+montant fixe.
+</Note>

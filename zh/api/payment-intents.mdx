@@ -1,0 +1,54 @@
+---
+title: "支付意图"
+description: "创建和查询支付"
+---
+
+## 创建一个支付意图
+
+`POST /v1/gateway/api/payment-intents`
+
+| 字段 | 类型 | 是否必填 | 说明 |
+|---|---|---|---|
+| `amount` | string | ✓ | 十进制字符串，最多 8 位小数——切勿使用浮点数 |
+| `token` | string | ✓ | 例如 `USDC_SOL`、`USDT_BSC`、`USDC_BASE` |
+| `chain` | string | ✓ | `SOLANA`、`ETHEREUM`、`BASE`、`POLYGON`、`BSC`、`ARBITRUM`、`OPTIMISM`、`XDC` |
+| `customerEmail` | string | — | 显示在收据上 |
+| `successUrl` | string | — | 确认后的重定向地址 |
+| `cancelUrl` | string | — | 取消时的重定向地址 |
+| `metadata` | object | — | 您自定义的键值（订单 id 等）——会原样返回 |
+
+```json
+// 201
+{
+  "intent": {
+    "id": "9b1f2c…",
+    "status": "PENDING",
+    "amount": "25",
+    "token": "USDC_SOL",
+    "chain": "SOLANA",
+    "walletAddress": "7xKXtg2CW…",
+    "expiresAt": "2026-07-04T12:30:00.000Z"
+  },
+  "checkoutUrl": "/pay/9b1f2c…"
+}
+```
+
+未支付的支付意图会在创建 30 分钟后过期。
+
+## 查询一个支付意图
+
+`GET /v1/gateway/api/payment-intents/:id`
+
+返回该支付意图及其当前状态：
+
+| 状态 | 含义 |
+|---|---|
+| `PENDING` | 等待链上支付 |
+| `CONFIRMED` | 已支付——存款金额 ≥ 目标金额，且已在链上确认 |
+| `EXPIRED` | 30 分钟窗口已过 |
+| `CANCELLED` | 由您取消 |
+
+## 公开结账数据
+
+`GET /v1/gateway/public/checkout/:id` —— 无需身份验证，为结账页面提供支持；
+可安全地从浏览器调用（仅返回商户名称、金额、地址和状态）。

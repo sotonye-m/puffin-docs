@@ -1,0 +1,51 @@
+---
+title: "البدء السريع"
+description: "أول عملية دفع مؤكدة في أقل من خمس دقائق"
+---
+
+<Steps>
+  <Step title="أنشئ حساب التاجر الخاص بك">
+    سجّل الدخول إلى [لوحة تحكم التجار](https://pay.puffinmoney.com) بالبريد
+    الإلكتروني (بدون كلمة مرور — نرسل لك رمزًا)، ثم أنشئ ملف عملك التجاري.
+    تتم الموافقة على الحسابات بسرعة.
+  </Step>
+  <Step title="أنشئ مفتاح API">
+    لوحة التحكم → **API keys** → *إنشاء مفتاح*. يظهر المفتاح الكامل
+    (`mk_live_…`) **مرة واحدة فقط** — احفظه على جانب الخادم، ولا تضعه أبدًا
+    في كود الواجهة الأمامية.
+  </Step>
+  <Step title="أنشئ نية دفع">
+    ```bash
+    curl -X POST https://api.puffinmoney.com/v1/gateway/api/payment-intents \
+      -H "X-API-Key: mk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": "25.00",
+        "token": "USDC_SOL",
+        "chain": "SOLANA",
+        "customerEmail": "buyer@example.com",
+        "successUrl": "https://yourstore.com/thanks"
+      }'
+    ```
+
+    ```json
+    {
+      "intent": { "id": "9b1f…", "status": "PENDING", "walletAddress": "7xKX…", "expiresAt": "…" },
+      "checkoutUrl": "/pay/9b1f…"
+    }
+    ```
+  </Step>
+  <Step title="أرسل عميلك إلى صفحة الدفع">
+    أعد التوجيه إلى `https://pay.puffinmoney.com/pay/<intent-id>` — سيرون
+    المبلغ، ورمز QR، وحالة حية تتأكد لحظة وصول الدفع.
+  </Step>
+  <Step title="احصل على إشعار">
+    أضف [نقطة نهاية webhook](/webhooks) واستمع لـ `payment.confirmed`.
+    تنتهي صلاحية نوايا الدفع بعد 30 دقيقة إذا لم تُدفع.
+  </Step>
+</Steps>
+
+<Tip>
+تفضل عدم كتابة أي كود في الخادم؟ استخدم [روابط الدفع](/payment-links) أو
+[SDK الـ iframe](/embed).
+</Tip>

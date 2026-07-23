@@ -1,0 +1,65 @@
+---
+title: "Equipos y planes"
+description: "Roles, enrutamiento de notificaciones y niveles de suscripción"
+---
+
+## Roles de equipo (RBAC)
+
+Invita compañeros desde Panel → **Team**. Los miembros inician sesión con
+su correo — sin contraseña.
+
+| Rol | Puede hacer |
+|---|---|
+| `OWNER` | Todo, incluyendo facturación y gestión del equipo |
+| `ADMIN` | Todo excepto facturación |
+| `FINANCE` | Pagos, retiros, billeteras, reportes |
+| `DEVELOPER` | API keys y webhooks |
+| `SUPPORT` | Leer pagos y clientes |
+| `VIEWER` | Solo lectura |
+
+## Enrutamiento de notificaciones
+
+Cada miembro tiene interruptores de correo por evento —
+`transactions`, `deposits`, `payouts`, `subscription`, `security`,
+`reports`. Tu líder de finanzas recibe correos de pagos; tu ingeniero
+recibe fallos de webhooks; nadie se ahoga en correos que no le
+corresponden.
+
+## Niveles de suscripción
+
+| Plan | Pensado para | Incluye |
+|---|---|---|
+| **Starter** | Probar Puffin | Enlaces de pago, checkout alojado |
+| **Growth** | Integraciones en producción | Todo lo de Starter, más la API, webhooks y el SDK de iframe |
+| **Scale** | Comercios de alto volumen | Todo lo de Growth, más soporte dedicado y liquidación personalizada |
+
+Cada nivel eleva tus límites de billeteras y asientos de equipo, y reduce
+tu comisión de gateway — consulta los precios y límites actuales en
+**Panel → Billing**, o `GET /v1/gateway/merchants/me/fees` para las cifras
+exactas de tu cuenta. Hay tarifas personalizadas disponibles para comercios
+de alto volumen — contacta a soporte para conversarlo.
+
+## Billeteras de comercio
+
+Crea billeteras de recolección en cualquier red soportada
+(Panel → **Wallets**), hasta el límite de tu plan. Los pagos del gateway
+siempre usan direcciones nuevas de un solo uso, sin importar cuántas
+billeteras tengas.
+
+## Precios por uso
+
+Los precios se definen **por capacidad** — Gateway (intents de pago), WaaS
+([wallets](/wallets)) y Swap ([bridging](/bridging)) — no una sola tarifa
+plana para todo. Cada capacidad tiene dos componentes independientes:
+
+| Componente | Qué cubre |
+|---|---|
+| **Platform** | El margen de Puffin |
+| **Gas** | Recupera el gas de red que las gas stations de Puffin pagan en tu nombre |
+
+Cada componente puede tener un porcentaje, una tarifa fija, o ambos, con
+topes mínimos/máximos opcionales. Tu tarifa efectiva es la que trae tu plan
+por defecto, con cualquier ajuste personalizado que tu gestor de cuenta
+haya definido encima. Consulta `GET /v1/gateway/merchants/me/fees` (sesión
+del panel) para tus cifras exactas por capacidad, o pregunta a soporte si
+estás negociando una tarifa personalizada.

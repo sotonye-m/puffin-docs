@@ -1,0 +1,44 @@
+---
+title: "Settlement"
+description: "How confirmed payments reach your own wallet"
+---
+
+Puffin never holds your funds longer than it has to. Once a payment intent
+is `CONFIRMED`, the amount (minus fees) is forwarded on-chain to your own
+**settlement wallet** — an address you control, not a Puffin-custodied
+balance you have to withdraw from manually.
+
+## Set your settlement wallet
+
+Dashboard → **Wallets** → set a settlement wallet per chain. Until one is
+set for a given chain, payments on that chain settle in a `held` state and
+queue safely — nothing is lost, they release automatically the moment you
+add a wallet.
+
+## Timing
+
+By default, settlement happens as soon as a payment confirms. If you'd
+rather batch payouts (end of day, for reconciliation, etc.), your account
+can be configured with a settlement delay — talk to support about setting
+one for your account.
+
+## Tracking settlement
+
+Each payment intent carries its own `settlementStatus`:
+
+| Status | Meaning |
+|---|---|
+| `pending` / `scheduled` | Confirmed, waiting on any configured delay |
+| `settled` | Funds sent to your settlement wallet — `settledAt` and `settleAmount` are set |
+| `held` | No settlement wallet configured for this chain yet |
+| `failed` | The on-chain transfer didn't go through — support is notified automatically |
+
+`feeAmount` and `settleAmount` on the intent show exactly what was deducted
+and what you received — the same numbers your dashboard reports use.
+
+<Note>
+Settlement is separate from [bridging](/bridging) — settlement always pays
+out on the same chain the payment was received on. If you want funds
+consolidated onto a different chain after settlement, bridge them from your
+settlement wallet like you would any other funds.
+</Note>

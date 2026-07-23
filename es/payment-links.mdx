@@ -1,0 +1,42 @@
+---
+title: "Enlaces de pago"
+description: "Comparte una URL y cobra — sin necesidad de código"
+---
+
+Los enlaces de pago son URLs reutilizables que creas en el panel. Cada
+visita genera un intent de pago nuevo, así que un solo enlace puede
+recibir pagos ilimitados.
+
+## Crear un enlace
+
+1. Panel → **Enlaces de pago** → define un título, elige token y red.
+2. Fija un monto, o déjalo en blanco para que el cliente elija (donaciones,
+   propinas, paga lo que quieras).
+3. Comparte `https://pay.puffinmoney.com/link/<slug>` — por chat, en una
+   factura, en tu firma de correo, en un QR en un recibo, donde quieras.
+
+## Uso programático
+
+Crea un intent a partir de un enlace (endpoint público, sin API key):
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/public/links/<slug>/intent \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": "10.00", "customerEmail": "buyer@example.com" }'
+```
+
+```json
+{ "intentId": "9b1f…" }
+```
+
+Luego envía al cliente a `/pay/<intentId>` o ábrelo con el
+[SDK de iframe](/embed):
+
+```js
+PuffinPay.openLink({ slug: 'consulting-invoice-x7k2m9', amount: '150.00' });
+```
+
+<Note>
+El monto solo es obligatorio en la solicitud cuando el enlace no tiene un
+monto fijo.
+</Note>

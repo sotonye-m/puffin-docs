@@ -1,0 +1,99 @@
+---
+title: "Wallet-as-a-Service"
+description: "Créez et gérez des portefeuilles USDC/USDT sur quatre chaînes, avec une seule API"
+---
+
+L'API Wallet-as-a-Service (WaaS) de Puffin vous permet de créer et
+d'exploiter des portefeuilles de stablecoins de façon programmatique —
+sans gestion de clés, sans infrastructure spécifique à chaque chaîne, sans
+construire votre propre système de conservation. C'est la même
+`X-API-Key` que celle que vous utilisez déjà pour les
+[intentions de paiement](/api/payment-intents).
+
+<Note>
+WaaS est lancé initialement limité à **l'USDC et l'USDT sur Solana,
+Polygon, BSC et Base** (Base ne prend en charge que l'USDC — il n'existe
+pas de contrat Tether officiel sur cette chaîne). Pour collecter un
+paiement ponctuel sur n'importe quelle chaîne/jeton pris en charge par
+Puffin, utilisez plutôt les [intentions de paiement](/api/payment-intents).
+</Note>
+
+## Ce que vous obtenez
+
+<CardGroup cols={2}>
+  <Card title="Portefeuilles à la demande" icon="wallet">
+    `POST /v1/gateway/api/wallets` génère un portefeuille pour une paire
+    chaîne + jeton et renvoie immédiatement son adresse.
+  </Card>
+  <Card title="Soldes et dépôts" icon="chart-line">
+    Consultez le solde en direct et l'historique des dépôts par
+    portefeuille — sans avoir besoin d'un explorateur de blockchain.
+  </Card>
+  <Card title="Retraits" icon="paper-plane">
+    Envoyez depuis n'importe quel portefeuille que vous avez créé vers une
+    adresse externe, avec la même sémantique de clé d'idempotence que les
+    intentions de paiement.
+  </Card>
+  <Card title="Webhooks de dépôt" icon="bell">
+    `wallet.deposit.detected` et `wallet.deposit.confirmed` se déclenchent
+    dès l'arrivée des fonds — voir [Webhooks](/webhooks).
+  </Card>
+</CardGroup>
+
+## Créer un portefeuille
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+La création de portefeuilles est soumise à la limite de votre forfait,
+comme les portefeuilles que vous avez peut-être déjà créés depuis le
+tableau de bord.
+
+## Vérifier un solde
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Envoyer un retrait
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+L'en-tête `Idempotency-Key` fonctionne exactement comme pour les
+intentions de paiement — répéter la même clé renvoie la réponse
+d'origine au lieu d'envoyer deux fois.
+
+## Référence complète
+
+Consultez la [référence de l'API Wallets](/api/wallets) pour chaque champ
+et code d'erreur, et [Bridging et swaps](/bridging) si vous devez déplacer
+des fonds entre chaînes plutôt que simplement les envoyer vers une adresse
+sur la même chaîne.

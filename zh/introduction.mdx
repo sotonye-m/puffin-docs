@@ -1,0 +1,54 @@
+---
+title: "简介"
+description: "在所有主流链上接受稳定币支付，结算到您自己掌控的钱包"
+---
+
+**Puffin Pay** 是 MacLeod Technologies 推出的稳定币支付网关。为您的客户提供支持
+USDC、USDT、EURC 等更多资产的收银台——覆盖 Solana、Ethereum、Base、Polygon、
+BSC、Arbitrum、Optimism 或 XDC——并以您希望的方式获得付款确认：签名 webhook、
+实时仪表盘，以及客户可以保留的收据。
+
+您可以自行决定集成的深度。零代码分享一个链接，用一行脚本在您的网站中嵌入结账
+弹窗，或者用一次 API 调用从服务器端驱动整个流程——无论哪种方式，背后都是同一个
+托管结账页面。
+
+## 接入方式
+
+<CardGroup cols={2}>
+  <Card title="支付链接" icon="link" href="/payment-links">
+    零代码。在仪表盘中创建链接，随处分享。
+  </Card>
+  <Card title="托管结账" icon="globe" href="/hosted-checkout">
+    一次 API 调用即可创建支付；将客户重定向到我们的结账页面。
+  </Card>
+  <Card title="嵌入式（iframe SDK）" icon="code" href="/embed">
+    将 `puffin.js` 添加到您的网站，在弹窗中打开结账——客户无需离开页面。
+  </Card>
+  <Card title="钱包即服务（WaaS）" icon="wallet" href="/wallets">
+    需要常驻钱包而不是一次性支付？直接通过 API 在多条链上创建和管理
+    USDC/USDT 钱包。
+  </Card>
+</CardGroup>
+
+持有资金分散在多条链上，超出您的预期？参见[跨链桥接与兑换](/bridging)——一个
+端点即可在链与资产之间转移价值，我们会自动为您选择最快的路径。
+
+## 支付流程
+
+1. 您创建一个**支付意图**（金额 + 代币 + 链）。
+2. Puffin 为该笔支付生成一个**全新的收款地址**。
+3. 客户完成支付；我们检测并在链上确认。
+4. 支付意图变为 `CONFIRMED`，您的 webhook 被触发（HMAC 签名），仪表盘实时更新。
+
+每个收款地址仅使用一次——没有金额匹配的启发式规则，不会出现支付混淆。
+
+## 资金如何到账
+
+已确认的支付会按照您账户配置的计划，结算到您自己掌控的钱包——参见
+[结算](/settlement) 了解具体流程，以及如何指定到您自己的地址。
+
+## 定价
+
+费用按能力模块（支付、钱包、跨链桥接）根据您的套餐设置，并可随业务增长提供
+定制费率——参见[团队与套餐](/teams-and-plans)了解定价结构，或查询
+`GET /v1/gateway/merchants/me/fees` 获取您账户当前的具体数值。

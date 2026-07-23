@@ -1,0 +1,53 @@
+---
+title: "Démarrage rapide"
+description: "Votre premier paiement confirmé en moins de cinq minutes"
+---
+
+<Steps>
+  <Step title="Créez votre compte marchand">
+    Connectez-vous au [tableau de bord marchand](https://pay.puffinmoney.com)
+    avec votre e-mail (sans mot de passe — nous envoyons un code), puis
+    créez votre profil d'entreprise. Les comptes sont approuvés rapidement.
+  </Step>
+  <Step title="Créez une clé API">
+    Tableau de bord → **API keys** → *Create key*. La clé complète
+    (`mk_live_…`) n'est affichée **qu'une seule fois** — conservez-la côté
+    serveur, jamais dans le code front-end.
+  </Step>
+  <Step title="Créez une intention de paiement">
+    ```bash
+    curl -X POST https://api.puffinmoney.com/v1/gateway/api/payment-intents \
+      -H "X-API-Key: mk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": "25.00",
+        "token": "USDC_SOL",
+        "chain": "SOLANA",
+        "customerEmail": "buyer@example.com",
+        "successUrl": "https://yourstore.com/thanks"
+      }'
+    ```
+
+    ```json
+    {
+      "intent": { "id": "9b1f…", "status": "PENDING", "walletAddress": "7xKX…", "expiresAt": "…" },
+      "checkoutUrl": "/pay/9b1f…"
+    }
+    ```
+  </Step>
+  <Step title="Envoyez votre client au checkout">
+    Redirigez vers `https://pay.puffinmoney.com/pay/<intent-id>` — il verra
+    le montant, un QR code, et un statut en direct qui se confirme dès que
+    le paiement arrive.
+  </Step>
+  <Step title="Recevez une notification">
+    Ajoutez un [point de terminaison webhook](/webhooks) et écoutez
+    `payment.confirmed`. Les intentions de paiement expirent après 30
+    minutes si elles ne sont pas payées.
+  </Step>
+</Steps>
+
+<Tip>
+Vous préférez zéro code côté serveur ? Utilisez les
+[liens de paiement](/payment-links) ou le [SDK iframe](/embed).
+</Tip>

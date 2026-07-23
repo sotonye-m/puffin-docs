@@ -1,0 +1,55 @@
+---
+title: "Checkout alojado (integración autoalojada)"
+description: "Crea intents desde tu servidor y redirige a nuestro checkout"
+---
+
+El flujo clásico controlado por servidor: tu backend crea un intent de pago
+con tu API key y luego redirige al cliente a la página de checkout alojada.
+
+## Flujo
+
+```mermaid
+sequenceDiagram
+  participant C as Cliente
+  participant S as Tu servidor
+  participant B as Puffin Pay
+  C->>S: Hace clic en "Pagar con cripto"
+  S->>B: POST /v1/gateway/api/payment-intents (X-API-Key)
+  B-->>S: { intent, checkoutUrl }
+  S-->>C: 302 → pay.puffinmoney.com/pay/:id
+  C->>B: Envía stablecoins a la dirección nueva
+  B-->>S: Webhook payment.confirmed (firmado con HMAC)
+  B-->>C: Redirige a tu successUrl
+```
+
+## Crear el intent
+
+```js
+const res = await fetch('https://api.puffinmoney.com/v1/gateway/api/payment-intents', {
+  method: 'POST',
+  headers: { 'X-API-Key': process.env.PUFFIN_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    amount: '99.00',
+    token: 'USDC_BASE',
+    chain: 'BASE',
+    successUrl: 'https://yourstore.com/orders/123/thanks',
+    metadata: { orderId: '123' },
+  }),
+});
+const { intent, checkoutUrl } = await res.json();
+```
+
+## Consultar o verificar
+
+```bash
+GET /v1/gateway/api/payment-intents/:id   # X-API-Key
+```
+
+Estados: `PENDING → CONFIRMED | EXPIRED | CANCELLED`. Trata siempre el
+**webhook** (o este GET) como la fuente de verdad — nunca el navegador.
+
+## Activos soportados
+
+Todas las stablecoins en todas las redes que Puffin soporta: Solana,
+Ethereum, Base, Polygon, BSC, Arbitrum, Optimism, XDC —
+`GET /v1/wallets/supported` muestra la matriz actual.

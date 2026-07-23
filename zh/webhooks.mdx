@@ -1,0 +1,69 @@
+---
+title: "Webhooks"
+description: "推送到您服务器的 HMAC 签名支付事件"
+---
+
+## 添加端点
+
+仪表盘 → **Webhooks** → 添加您的 HTTPS 网址并选择事件（建议从
+`payment.confirmed` 开始）。您将获得一个签名密钥（`whsec_…`）。
+
+## Payload
+
+```json
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // 原始请求体的 HMAC-SHA256 值
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## 验证签名
+
+在信任任何数据之前，务必先验证：
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## 事件
+
+| 事件 | 触发时机 |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | 支付意图收到的金额达到目标金额 |
+| `payment.dispute_opened` | 付款人报告发送的资金与某个支付意图不匹配 |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | 根据您的 `latePaymentPolicy` 处理逾期支付 |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | 您通过 API 创建的 [WaaS 钱包](/wallets)收到存款——与上面的支付意图流程不同 |
+| `bridge.completed` / `bridge.failed` | 一笔[跨链桥接转账](/bridging)达到最终状态 |
+
+`wallet.*` 和 `bridge.*` 的 payload 包含 `walletId`/`bridgeTransferId`、
+`chain`/`route`、`amount`，以及相关的交易哈希——结构与
+[Wallets](/api/wallets) 和 [Bridge](/api/bridge) 的 API 响应一致。
+
+### 争议
+
+当客户在您的结账页面报告发送的资金未能自动确认时（金额不符、地址错误，或
+延迟发送），系统会创建一个争议。这在客户一侧是自助式的（他们会立即收到
+`matchedWallet` / `amountCovered` / `lateByMinutes` 的结果），
+`payment.dispute_opened` 会给您同样详细的信息，以便在自动检查无法解决问题
+时人工跟进——例如，即便金额略有不足，您也可以自行决定为订单放行。
+
+## 投递与重试
+
+- 请在 10 秒内响应 `2xx`；其他任何情况都视为失败。
+- 我们会以退避策略最多重试 **3 次**；投递记录和状态码均可在仪表盘中查看。
+- 处理程序必须**幂等**——请以 `paymentIntentId` 作为去重键。

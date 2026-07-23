@@ -1,0 +1,77 @@
+---
+title: "Webhooks"
+description: "Événements de paiement signés HMAC envoyés à votre serveur"
+---
+
+## Ajouter un point de terminaison
+
+Tableau de bord → **Webhooks** → ajoutez votre URL HTTPS et choisissez les
+événements (commencez par `payment.confirmed`). Vous obtiendrez un secret
+de signature (`whsec_…`).
+
+## Payload
+
+```json
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // HMAC-SHA256 du corps brut
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## Vérifier la signature
+
+Vérifiez toujours avant de faire confiance à quoi que ce soit :
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## Événements
+
+| Événement | Se déclenche quand |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | Le montant reçu d'une intention de paiement couvre son objectif |
+| `payment.dispute_opened` | Un payeur signale l'envoi de fonds qui ne correspondent à aucune intention |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | Gestion des paiements tardifs selon votre `latePaymentPolicy` |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | Un dépôt arrive sur un [portefeuille WaaS](/wallets) que vous avez créé via l'API — différent du flux d'intention de paiement ci-dessus |
+| `bridge.completed` / `bridge.failed` | Un [transfert bridge](/bridging) atteint un état final |
+
+Les payloads `wallet.*` et `bridge.*` incluent `walletId`/`bridgeTransferId`,
+`chain`/`route`, `amount`, et les hachages de transaction pertinents —
+avec la même forme que leurs réponses API dans [Wallets](/api/wallets) et
+[Bridge](/api/bridge).
+
+### Litiges
+
+Un litige s'ouvre lorsqu'un client, depuis votre page de checkout, signale
+avoir envoyé des fonds qui ne se sont pas confirmés automatiquement —
+mauvais montant, mauvaise adresse, ou envoi tardif. C'est en libre-service
+côté client (il reçoit instantanément un résultat `matchedWallet` /
+`amountCovered` / `lateByMinutes`), et `payment.dispute_opened` vous donne
+le même niveau de détail pour un suivi manuel si la vérification
+automatique ne résout pas le problème — par exemple, créditer une
+commande malgré un paiement légèrement incomplet, à votre discrétion.
+
+## Livraison et nouvelles tentatives
+
+- Répondez `2xx` en moins de 10 secondes ; toute autre réponse compte
+  comme un échec.
+- Nous réessayons jusqu'à **3 fois** avec un backoff ; les livraisons et
+  codes de statut sont visibles dans le tableau de bord.
+- Les gestionnaires doivent être **idempotents** — utilisez
+  `paymentIntentId` comme clé.

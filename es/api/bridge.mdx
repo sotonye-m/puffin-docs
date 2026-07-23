@@ -1,0 +1,79 @@
+---
+title: "Bridge"
+description: "Cotiza y ejecuta transferencias de USDC/USDT entre redes"
+---
+
+Todos los endpoints a continuación están bajo
+`https://api.puffinmoney.com/v1/gateway/api` y requieren el encabezado
+`X-API-Key` — ver [Autenticación](/api/authentication). Ver
+[Bridging y swaps](/bridging) para entender el enrutamiento automático.
+
+## Cotizar una transferencia
+
+`POST /bridge/quote`
+
+| Campo | Tipo | Obligatorio | Notas |
+|---|---|---|---|
+| `walletId` | string | ✓ | Billetera de origen — su red/token son el origen de la transferencia |
+| `toChain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, o `BASE` |
+| `toToken` | string | ✓ | Símbolo del token de destino |
+| `amount` | string | ✓ | Cadena decimal, hasta 8 decimales |
+| `destinationAddress` | string | ✓ | Dirección del destinatario en `toChain` |
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`quote.route` es un identificador interno de enrutamiento, opaco —
+de solo lectura, informativo, no está pensado para ser analizado ni
+mostrado a tus clientes. `POST /bridge` elige la misma ruta para los
+mismos parámetros.
+
+## Ejecutar una transferencia
+
+`POST /bridge` — mismo cuerpo que la solicitud de cotización, más el
+encabezado opcional `Idempotency-Key`.
+
+Reserva y debita la billetera de origen de forma atómica, luego inicia la
+transferencia por la ruta cotizada. Devuelve de inmediato una transferencia
+`pending` — no espera a que se complete.
+
+```json
+// 201
+{
+  "bridgeTransfer": {
+    "id": "br_9f21…",
+    "route": "auto",
+    "fromChain": "SOLANA",
+    "toChain": "BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc...",
+    "status": "attesting"
+  }
+}
+```
+
+## Consultar el estado de una transferencia
+
+`GET /bridge/:id`
+
+| Estado | Significado |
+|---|---|
+| `pending` / `source_sent` | Debitado, transmitiendo la transacción de origen |
+| `attesting` | Confirmando la transferencia antes de poder entregarla en la red destino |
+| `ready_to_mint` | Confirmado, entrega en destino en cola |
+| `completed` | Fondos entregados — `destTxHash` queda definido |
+| `failed` | No se completó — revisa `metadata` para el error |
+| `refunded` | Los fondos fueron devueltos en lugar de entregados (poco común) |
+
+## Errores
+
+| Código | Significado |
+|---|---|
+| `bridge_not_configured` | La ruta seleccionada aún no está habilitada para este corredor (503) |
+| `unsupported_asset` | `toChain`/`toToken` no está en la matriz WaaS |
+| `insufficient_balance` | La billetera de origen no puede cubrir el monto + comisiones |
+| `not_found` | `walletId` o el `id` de la transferencia no te pertenece |

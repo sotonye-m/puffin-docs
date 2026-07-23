@@ -1,0 +1,76 @@
+---
+title: "Webhooks"
+description: "Eventos de pago firmados con HMAC, enviados a tu servidor"
+---
+
+## Agregar un endpoint
+
+Panel → **Webhooks** → agrega tu URL HTTPS y elige los eventos (empieza con
+`payment.confirmed`). Recibirás un secreto de firma (`whsec_…`).
+
+## Payload
+
+```json
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // HMAC-SHA256 del cuerpo sin procesar
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## Verificar la firma
+
+Verifica siempre antes de confiar en cualquier dato:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## Eventos
+
+| Evento | Cuándo se dispara |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | El monto recibido de un intent cubre su objetivo |
+| `payment.dispute_opened` | Un pagador reporta haber enviado fondos que no coincidieron con un intent |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | Manejo de pagos tardíos según tu `latePaymentPolicy` |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | Llega un depósito a una [billetera WaaS](/wallets) que creaste por la API — distinto del flujo de intents de pago |
+| `bridge.completed` / `bridge.failed` | Una [transferencia de bridge](/bridging) llega a un estado final |
+
+Los payloads de `wallet.*` y `bridge.*` incluyen `walletId`/`bridgeTransferId`,
+`chain`/`route`, `amount`, y los hashes de transacción relevantes — con la
+misma forma que sus respuestas de API en [Wallets](/api/wallets) y
+[Bridge](/api/bridge).
+
+### Disputas
+
+Se abre una disputa cuando un cliente, desde tu página de checkout, reporta
+haber enviado fondos que no se confirmaron automáticamente — monto
+incorrecto, dirección incorrecta, o un envío tardío. Es autoservicio del
+lado del cliente (reciben al instante un resultado `matchedWallet` /
+`amountCovered` / `lateByMinutes`), y `payment.dispute_opened` te da el
+mismo detalle para que puedas darle seguimiento manual si la verificación
+automática no lo resuelve — por ejemplo, acreditar un pedido a pesar de un
+pago ligeramente incompleto, a tu criterio.
+
+## Entrega y reintentos
+
+- Responde `2xx` en menos de 10 segundos; cualquier otra cosa cuenta como
+  un fallo.
+- Reintentamos hasta **3 veces** con backoff; las entregas y códigos de
+  estado son visibles en el panel.
+- Los manejadores deben ser **idempotentes** — usa `paymentIntentId` como
+  clave.

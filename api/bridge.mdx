@@ -5,8 +5,7 @@ description: "Quote and execute cross-chain USDC/USDT transfers"
 
 All endpoints below are under `https://api.puffinmoney.com/v1/gateway/api`
 and require the `X-API-Key` header — see [Authentication](/api/authentication).
-See [Bridging & swaps](/bridging) for how routing between CCTP V2 and NEAR
-Intents works.
+See [Bridging & swaps](/bridging) for how automatic routing works.
 
 ## Quote a transfer
 
@@ -22,12 +21,13 @@ Intents works.
 
 ```json
 {
-  "quote": { "route": "cctp_v2", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
   "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
 }
 ```
 
-`quote.route` is `"cctp_v2"` or `"near_intents"` — read-only, informational;
+`quote.route` is an internal, opaque routing identifier — read-only,
+informational, not meant to be parsed or shown to your customers.
 `POST /bridge` picks the same route for the same inputs.
 
 ## Execute a transfer
@@ -36,16 +36,15 @@ Intents works.
 `Idempotency-Key` header.
 
 Reserves and debits the source wallet atomically, then kicks off the
-route-specific transfer (CCTP burn, or funding a NEAR Intents deposit
-address). Returns immediately with a `pending` transfer — it does not wait
-for completion.
+transfer on whichever route was quoted. Returns immediately with a
+`pending` transfer — it does not wait for completion.
 
 ```json
 // 201
 {
   "bridgeTransfer": {
     "id": "br_9f21…",
-    "route": "cctp_v2",
+    "route": "auto",
     "fromChain": "SOLANA",
     "toChain": "BASE",
     "amount": "1000.00",
@@ -62,11 +61,11 @@ for completion.
 | Status | Meaning |
 |---|---|
 | `pending` / `source_sent` | Debited, broadcasting the source-side transaction |
-| `attesting` | Waiting on CCTP attestation or the NEAR Intents solver |
-| `ready_to_mint` | Attestation received, destination mint queued |
+| `attesting` | Confirming the transfer before it can be delivered on the destination chain |
+| `ready_to_mint` | Confirmed, destination delivery queued |
 | `completed` | Funds delivered — `destTxHash` is set |
 | `failed` | Did not complete — check `metadata` for the error |
-| `refunded` | NEAR Intents returned funds instead of delivering (rare) |
+| `refunded` | Funds were returned to you instead of delivered (rare) |
 
 ## Errors
 

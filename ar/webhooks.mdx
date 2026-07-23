@@ -1,0 +1,73 @@
+---
+title: "Webhooks"
+description: "أحداث دفع موقّعة بـ HMAC تُرسَل إلى خادمك"
+---
+
+## أضف نقطة نهاية
+
+لوحة التحكم → **Webhooks** → أضف عنوان HTTPS الخاص بك واختر الأحداث (ابدأ
+بـ `payment.confirmed`). ستحصل على سر توقيع (`whsec_…`).
+
+## الحمولة
+
+```json
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // HMAC-SHA256 للنص الخام
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## تحقق من التوقيع
+
+تحقق دائمًا قبل الوثوق بأي شيء:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## الأحداث
+
+| الحدث | متى يُطلَق |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | المبلغ المستلم لنية الدفع يغطي هدفها |
+| `payment.dispute_opened` | يُبلغ الدافع عن إرسال أموال لم تطابق أي نية |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | معالجة الدفع المتأخر وفق `latePaymentPolicy` الخاصة بك |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | يصل إيداع إلى [محفظة WaaS](/wallets) أنشأتها عبر واجهة برمجة التطبيقات — مختلف عن تدفق نية الدفع أعلاه |
+| `bridge.completed` / `bridge.failed` | يصل [تحويل جسر](/bridging) إلى حالة نهائية |
+
+تتضمن حمولات `wallet.*` و`bridge.*` `walletId`/`bridgeTransferId`،
+`chain`/`route`، `amount`، وتجزئات المعاملة ذات الصلة — بنفس الشكل الموجود
+في استجابات واجهة برمجة التطبيقات في [Wallets](/api/wallets) و
+[Bridge](/api/bridge).
+
+### النزاعات
+
+يُفتح نزاع عندما يُبلغ عميل، من صفحة الدفع الخاصة بك، عن إرسال أموال لم
+تتأكد تلقائيًا — مبلغ خاطئ، عنوان خاطئ، أو إرسال متأخر. الأمر ذاتي الخدمة
+من جهة العميل (يحصلون فورًا على نتيجة `matchedWallet` / `amountCovered` /
+`lateByMinutes`)، ويمنحك `payment.dispute_opened` نفس التفاصيل لمتابعتها
+يدويًا إذا لم يحل التحقق الآلي المشكلة — على سبيل المثال، اعتماد طلب رغم
+نقص طفيف في المبلغ المدفوع، وفق تقديرك الخاص.
+
+## التسليم وإعادة المحاولة
+
+- استجب بـ `2xx` خلال 10 ثوانٍ؛ أي شيء آخر يُعد فشلًا.
+- نعيد المحاولة حتى **3 مرات** مع تأخير تصاعدي؛ عمليات التسليم ورموز
+  الحالة مرئية في لوحة التحكم.
+- يجب أن تكون المعالجات **غير قابلة للتكرار (idempotent)** — استخدم
+  `paymentIntentId` كمفتاح.

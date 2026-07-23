@@ -1,0 +1,98 @@
+---
+title: "Bridging e swaps"
+description: "Mova USDC e USDT entre Solana, Polygon, BSC e Base com uma única API"
+---
+
+A Puffin roteia automaticamente transferências entre redes pelo caminho
+mais rápido e seguro para o par específico que você está movendo — você
+chama um único endpoint, e cuidamos de escolher e executar a rota.
+
+## Como funciona
+
+<CardGroup cols={2}>
+  <Card title="Roteamento inteligente" icon="bolt">
+    Cada transferência é avaliada de acordo com os ativos e redes
+    envolvidos, e roteada da forma que se completa mais rápido e de forma
+    mais confiável — sem ativos encapsulados, sem slippage manual de
+    pool de liquidez para calcular.
+  </Card>
+  <Card title="Sempre um único endpoint" icon="shuffle">
+    Transferências do mesmo ativo entre redes e swaps entre ativos
+    diferentes passam pela mesma chamada. Você nunca escolhe o mecanismo
+    sozinho.
+  </Card>
+</CardGroup>
+
+`POST /bridge/quote` informa a taxa de rede e um prazo estimado antes de
+você confirmar — `route` na resposta é um identificador interno de
+roteamento apenas para fins de suporte; não é algo que você precise
+tratar no lado do cliente.
+
+## Cote, depois execute
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
+  -H "X-API-Key: mk_live_..." \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`ourFee` é a cobrança de plataforma + recuperação de gas da Puffin, além
+da taxa de rede cotada — veja
+[Preços](/teams-and-plans#usage-based-pricing) para saber como isso é
+configurado. Quando estiver pronto:
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: bridge_2026-07-22_001" \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+Isso debita imediatamente a carteira de origem e retorna um
+`bridgeTransfer` que você pode consultar — ou simplesmente esperar pelo
+webhook.
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
+  -H "X-API-Key: mk_live_..."
+```
+
+| Status | Significado |
+|---|---|
+| `pending` / `source_sent` | Debitado, transmitindo a transação de origem |
+| `attesting` | Confirmando a transferência antes que possa ser entregue na rede de destino |
+| `completed` | Fundos entregues em `destinationAddress` na `toChain` |
+| `failed` / `refunded` | Não foi concluído — veja `metadata` para detalhes |
+
+## Webhooks
+
+Assine `bridge.completed` e `bridge.failed` — veja
+[Webhooks](/webhooks) para o formato completo do payload.
+
+<Note>
+O bridging é apenas USDC/USDT por enquanto, de acordo com a matriz do
+[Wallet-as-a-Service](/wallets) (Solana, Polygon, BSC, Base). Uma
+solicitação de bridge para uma rota não configurada retorna
+`bridge_not_configured` — isso é uma restrição operacional do nosso lado
+enquanto um corredor está sendo habilitado, não algo que você possa
+contornar no lado do cliente.
+</Note>

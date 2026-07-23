@@ -1,0 +1,78 @@
+---
+title: "Webhooks"
+description: "Eventos de pagamento assinados com HMAC enviados ao seu servidor"
+---
+
+## Adicionar um endpoint
+
+Painel → **Webhooks** → adicione sua URL HTTPS e escolha os eventos
+(comece com `payment.confirmed`). Você receberá um segredo de assinatura
+(`whsec_…`).
+
+## Payload
+
+```json
+POST https://yourserver.com/webhooks/puffin
+X-Puffin-Signature: 3f5a…   // HMAC-SHA256 do corpo bruto
+
+{
+  "event": "payment.confirmed",
+  "data": {
+    "paymentIntentId": "9b1f…",
+    "amount": "25.00",
+    "token": "USDC_SOL",
+    "txHash": "5j8K…"
+  },
+  "timestamp": "2026-07-04T12:00:00.000Z"
+}
+```
+
+## Verificar a assinatura
+
+Sempre verifique antes de confiar em qualquer dado:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, signature, secret) {
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected.length === signature.length &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+```
+
+## Eventos
+
+| Evento | Quando dispara |
+|---|---|
+| `payment.confirmed` / `payment.confirmed_late` | O valor recebido de uma intenção de pagamento cobre seu alvo |
+| `payment.dispute_opened` | Um pagador relata ter enviado fundos que não corresponderam a uma intenção |
+| `payment.late_returned` / `payment.late_recovery_queued` / `payment.late_expired` | Tratamento de pagamentos atrasados de acordo com sua `latePaymentPolicy` |
+| `wallet.deposit.detected` / `wallet.deposit.confirmed` | Um depósito chega em uma [carteira WaaS](/wallets) que você criou pela API — diferente do fluxo de intenção de pagamento acima |
+| `bridge.completed` / `bridge.failed` | Uma [transferência bridge](/bridging) atinge um estado final |
+
+Os payloads de `wallet.*` e `bridge.*` incluem `walletId`/`bridgeTransferId`,
+`chain`/`route`, `amount`, e os hashes de transação relevantes — no
+mesmo formato de suas respostas de API em [Wallets](/api/wallets) e
+[Bridge](/api/bridge).
+
+### Disputas
+
+Uma disputa é aberta quando um cliente, a partir da sua página de
+checkout, relata ter enviado fundos que não confirmaram automaticamente
+— valor errado, endereço errado, ou envio atrasado. É self-service do
+lado do cliente (eles recebem instantaneamente um resultado
+`matchedWallet` / `amountCovered` / `lateByMinutes`), e
+`payment.dispute_opened` te dá o mesmo nível de detalhe para que você
+possa fazer o acompanhamento manual caso a verificação automática não
+resolva — por exemplo, aprovar um pedido mesmo com um pagamento
+ligeiramente incompleto, a seu critério.
+
+## Entrega e novas tentativas
+
+- Responda `2xx` em até 10 segundos; qualquer outra coisa conta como
+  falha.
+- Tentamos novamente até **3 vezes** com backoff; entregas e códigos de
+  status ficam visíveis no painel.
+- Os handlers devem ser **idempotentes** — use `paymentIntentId` como
+  chave.

@@ -1,0 +1,97 @@
+---
+title: "Wallet-as-a-Service"
+description: "Crie e gerencie carteiras USDC/USDT em quatro redes, com uma única API"
+---
+
+A API Wallet-as-a-Service (WaaS) da Puffin permite que você crie e opere
+carteiras de stablecoins de forma programática — sem gerenciamento de
+chaves, sem infraestrutura específica de cada rede, sem construir sua
+própria custódia. É a mesma `X-API-Key` que você já usa para
+[intenções de pagamento](/api/payment-intents).
+
+<Note>
+O WaaS é lançado inicialmente limitado a **USDC e USDT em Solana,
+Polygon, BSC e Base** (Base é apenas USDC — não existe um contrato USDT
+oficial da Tether lá). Para receber um pagamento avulso em qualquer
+rede/token suportado pela Puffin, use
+[intenções de pagamento](/api/payment-intents) em vez disso.
+</Note>
+
+## O que você recebe
+
+<CardGroup cols={2}>
+  <Card title="Carteiras sob demanda" icon="wallet">
+    `POST /v1/gateway/api/wallets` gera uma carteira para um par
+    rede + token e retorna seu endereço imediatamente.
+  </Card>
+  <Card title="Saldos e depósitos" icon="chart-line">
+    Consulte o saldo em tempo real e o histórico de depósitos por
+    carteira — sem precisar de um explorador de blockchain.
+  </Card>
+  <Card title="Saques" icon="paper-plane">
+    Envie de qualquer carteira que você criou para um endereço externo,
+    com a mesma semântica de chave de idempotência das intenções de
+    pagamento.
+  </Card>
+  <Card title="Webhooks de depósito" icon="bell">
+    `wallet.deposit.detected` e `wallet.deposit.confirmed` disparam no
+    momento em que os fundos chegam — veja [Webhooks](/webhooks).
+  </Card>
+</CardGroup>
+
+## Criar uma carteira
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets \
+  -H "X-API-Key: mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "BASE", "token": "USDC_BASE", "label": "EU settlement" }'
+```
+
+```json
+// 201
+{
+  "wallet": {
+    "id": "8f2a1c…",
+    "chain": "BASE",
+    "token": "USDC_BASE",
+    "address": "0x9273...6544",
+    "label": "EU settlement",
+    "custodyModel": "joint_custody"
+  }
+}
+```
+
+A criação de carteiras está sujeita ao limite do seu plano, o mesmo
+limite que se aplica às carteiras que você já pode ter criado pelo
+painel.
+
+## Consultar um saldo
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../balance \
+  -H "X-API-Key: mk_live_..."
+```
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## Enviar um saque
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/wallets/8f2a1c.../withdrawals \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: wd_2026-07-22_001" \
+  -d '{ "toAddress": "0xabc...", "amount": "500.00", "note": "Vendor payout" }'
+```
+
+O cabeçalho `Idempotency-Key` funciona exatamente como nas intenções de
+pagamento — repetir a mesma chave retorna a resposta original em vez de
+enviar duas vezes.
+
+## Referência completa
+
+Veja a [referência da API de Wallets](/api/wallets) para cada campo e
+código de erro, e [Bridging e swaps](/bridging) se precisar mover fundos
+entre redes em vez de apenas enviá-los para um endereço na mesma rede.

@@ -1,0 +1,38 @@
+---
+title: "支付链接"
+description: "分享一个网址即可收款——无需代码"
+---
+
+支付链接是您在仪表盘中创建的可重复使用的网址。每次访问都会生成一个全新的支付
+意图，因此一个链接可以收取无限次支付。
+
+## 创建链接
+
+1. 仪表盘 → **支付链接** → 设置标题，选择代币和链。
+2. 设置固定金额，或留空让客户自行选择（捐赠、小费、随心付款）。
+3. 分享 `https://pay.puffinmoney.com/link/<slug>` —— 聊天、发票、邮件签名、
+   收据上的二维码，任何地方都可以。
+
+## 编程方式调用
+
+通过链接创建支付意图（公开端点，无需 API 密钥）：
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/public/links/<slug>/intent \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": "10.00", "customerEmail": "buyer@example.com" }'
+```
+
+```json
+{ "intentId": "9b1f…" }
+```
+
+然后将客户引导至 `/pay/<intentId>`，或使用 [iframe SDK](/embed) 打开：
+
+```js
+PuffinPay.openLink({ slug: 'consulting-invoice-x7k2m9', amount: '150.00' });
+```
+
+<Note>
+仅当链接没有固定金额时，请求中的金额才是必填项。
+</Note>

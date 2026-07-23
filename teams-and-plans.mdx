@@ -25,14 +25,16 @@ payout emails; your engineer gets webhook failures; nobody drowns in mail.
 
 ## Subscription tiers
 
-| Plan | Monthly | Gateway fee | Wallets | Team seats |
-|---|---|---|---|---|
-| Starter | Free | 1.5% | 3 | 2 |
-| Growth | $49 | 1.0% | 15 | 8 |
-| Scale | $199 | 0.6% | 100 | 50 |
+| Plan | Built for | Includes |
+|---|---|---|
+| **Starter** | Trying Puffin out | Payment links, hosted checkout |
+| **Growth** | Live integrations | Everything in Starter, plus the API, webhooks, and the iframe SDK |
+| **Scale** | High-volume merchants | Everything in Growth, plus dedicated support and custom settlement |
 
-Plans and custom fee rates are managed by the Puffin admin team — contact
-support to upgrade or negotiate volume pricing.
+Each tier raises your wallet and team-seat limits, and lowers your gateway
+fee — see current pricing and limits in **Dashboard → Billing**, or
+`GET /v1/gateway/merchants/me/fees` for your account's exact numbers. Custom
+rates for volume merchants are available — contact support to discuss.
 
 ## Merchant wallets
 
@@ -52,8 +54,8 @@ across everything. Each capability has two independent components:
 | **Gas** | Recovers the network gas Puffin's gas stations pay on your behalf |
 
 Each component can carry a percentage, a flat fee, or both, with optional
-minimum/maximum caps — e.g. "0.5% capped between $0.01 and $2.00." Your
-effective rate is your plan's default, with any custom override your
-account manager has set layered on top. Check `GET /v1/gateway/merchants/me/fees`
-(dashboard session) for your exact current numbers per capability, or ask
-support if you're negotiating a custom rate.
+minimum/maximum caps. Your effective rate is your plan's default, with any
+custom override your account manager has set layered on top. Check
+`GET /v1/gateway/merchants/me/fees` (dashboard session) for your exact
+current numbers per capability, or ask support if you're negotiating a
+custom rate.

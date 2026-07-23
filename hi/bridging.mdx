@@ -1,0 +1,93 @@
+---
+title: "ब्रिजिंग और स्वैप"
+description: "एक API से Solana, Polygon, BSC, और Base के बीच USDC और USDT मूव करें"
+---
+
+Puffin आप जो पेयर मूव कर रहे हैं उसके लिए, क्रॉस-चेन ट्रांसफ़र को अपने आप
+सबसे तेज़ और सुरक्षित तरीके से रूट करता है — आप बस एक एंडपॉइंट कॉल करते हैं,
+रास्ता चुनना और चलाना हमारा काम है।
+
+## यह कैसे काम करता है
+
+<CardGroup cols={2}>
+  <Card title="स्मार्ट राउटिंग" icon="bolt">
+    हर ट्रांसफ़र को उसमें शामिल एसेट्स और चेन के आधार पर परखा जाता है, और जो
+    तरीका सबसे तेज़ और सबसे भरोसेमंद तरीके से पूरा हो, उसी से रूट किया जाता
+    है — कोई रैप्ड एसेट नहीं, लिक्विडिटी-पूल स्लिपेज का हिसाब खुद लगाने की
+    ज़रूरत नहीं।
+  </Card>
+  <Card title="हमेशा एक ही एंडपॉइंट" icon="shuffle">
+    चेन के बीच एक ही एसेट का ट्रांसफ़र और अलग-अलग एसेट के बीच स्वैप, दोनों
+    एक ही कॉल से होते हैं। आपको खुद कभी मैकेनिज़्म चुनने की ज़रूरत नहीं।
+  </Card>
+</CardGroup>
+
+`POST /bridge/quote` कमिट करने से पहले नेटवर्क फ़ीस और एक ETA बताता है —
+रिस्पॉन्स में मौजूद `route` सिर्फ़ सपोर्ट के लिए एक इंटरनल आइडेंटिफ़ायर है;
+इसे क्लाइंट-साइड पर हैंडल करने की ज़रूरत नहीं है।
+
+## पहले कोट, फिर एक्ज़ीक्यूट
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
+  -H "X-API-Key: mk_live_..." \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`ourFee` कोटेड नेटवर्क फ़ीस के ऊपर Puffin का प्लेटफ़ॉर्म + गैस-रिकवरी चार्ज
+है — यह कैसे कॉन्फ़िगर होता है इसके लिए देखें
+[प्राइसिंग](/teams-and-plans#usage-based-pricing)। जब तैयार हों:
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: bridge_2026-07-22_001" \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+यह तुरंत सोर्स वॉलेट से डेबिट करता है और एक `bridgeTransfer` देता है जिसे आप
+पोल कर सकते हैं — या बस webhook का इंतज़ार करें।
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
+  -H "X-API-Key: mk_live_..."
+```
+
+| स्टेटस | मतलब |
+|---|---|
+| `pending` / `source_sent` | डेबिट हो गया, सोर्स-साइड ट्रांज़ैक्शन ब्रॉडकास्ट हो रहा है |
+| `attesting` | डेस्टिनेशन चेन पर डिलीवर होने से पहले ट्रांसफ़र कन्फ़र्म हो रहा है |
+| `completed` | फंड `toChain` पर `destinationAddress` को डिलीवर हो गए |
+| `failed` / `refunded` | पूरा नहीं हुआ — डिटेल्स के लिए `metadata` देखें |
+
+## Webhooks
+
+`bridge.completed` और `bridge.failed` सब्सक्राइब करें — पूरी payload
+शेप के लिए देखें [Webhooks](/webhooks)।
+
+<Note>
+ब्रिजिंग आज सिर्फ़ USDC/USDT तक सीमित है, [Wallet-as-a-Service](/wallets)
+के चेन/टोकन मैट्रिक्स (Solana, Polygon, BSC, Base) के अनुसार। किसी ऐसे
+रूट के लिए ब्रिज रिक्वेस्ट जो अभी कॉन्फ़िगर नहीं है, `bridge_not_configured`
+लौटाती है — यह हमारी तरफ़ से एक ऑपरेशनल गेट है जब तक कोई कॉरिडोर रोलआउट हो
+रहा है, यह कुछ ऐसा नहीं जिसे क्लाइंट-साइड पर बायपास किया जा सके।
+</Note>

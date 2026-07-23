@@ -1,0 +1,91 @@
+---
+title: "الجسور والمبادلات"
+description: "انقل USDC وUSDT بين Solana وPolygon وBSC وBase بواجهة برمجة تطبيقات واحدة"
+---
+
+توجّه Puffin تلقائيًا التحويلات بين الشبكات عبر أي آلية تناسب فعليًا الزوج
+الذي تنقله — تستدعي أنت نقطة نهاية واحدة فقط، ونحن نتولى اختيار المسار
+وتنفيذه.
+
+## كيف يعمل الأمر
+
+<CardGroup cols={2}>
+  <Card title="التوجيه الذكي" icon="bolt">
+    يُقيَّم كل تحويل وفق الأصول والشبكات المعنية، ويُوجَّه بالطريقة التي
+    تكتمل بها أسرع وأكثر موثوقية — دون أصول مغلّفة، ودون انزلاق سعري يدوي
+    في برك السيولة تحتاج لحسابه.
+  </Card>
+  <Card title="نقطة نهاية واحدة دائمًا" icon="shuffle">
+    التحويلات بنفس الأصل بين الشبكات، والمبادلات بين أصول مختلفة، كلاهما
+    يمر عبر نفس الاستدعاء. لا تختار الآلية بنفسك أبدًا.
+  </Card>
+</CardGroup>
+
+يخبرك `POST /bridge/quote` برسوم الشبكة والوقت التقديري قبل الالتزام —
+`route` في الاستجابة هو معرّف توجيه داخلي لأغراض الدعم فقط؛ وليس شيئًا
+تحتاج للتعامل معه من جانب العميل.
+
+## احصل على عرض سعر، ثم نفّذ
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
+  -H "X-API-Key: mk_live_..." \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+```json
+{
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
+}
+```
+
+`ourFee` هو رسوم Puffin للمنصة + استرداد الغاز، فوق رسوم الشبكة المُقدَّرة
+— راجع [الأسعار](/teams-and-plans#usage-based-pricing) لمعرفة كيفية
+تكوينها. عندما تكون جاهزًا:
+
+```bash
+curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge \
+  -H "X-API-Key: mk_live_..." \
+  -H "Idempotency-Key: bridge_2026-07-22_001" \
+  -d '{
+    "walletId": "8f2a1c...",
+    "toChain": "BASE",
+    "toToken": "USDC_BASE",
+    "amount": "1000.00",
+    "destinationAddress": "0xabc..."
+  }'
+```
+
+يخصم هذا فورًا من المحفظة المصدر ويعيد `bridgeTransfer` يمكنك الاستعلام
+عنه — أو ببساطة انتظار الـ webhook.
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
+  -H "X-API-Key: mk_live_..."
+```
+
+| الحالة | المعنى |
+|---|---|
+| `pending` / `source_sent` | تم الخصم، جارٍ بث معاملة المصدر |
+| `attesting` | جارٍ تأكيد التحويل قبل إمكانية تسليمه على الشبكة الوجهة |
+| `completed` | تم تسليم الأموال إلى `destinationAddress` على `toChain` |
+| `failed` / `refunded` | لم تكتمل — راجع `metadata` للتفاصيل |
+
+## Webhooks
+
+اشترك في `bridge.completed` و`bridge.failed` — راجع [Webhooks](/webhooks)
+للاطلاع على شكل الحمولة الكامل.
+
+<Note>
+الجسور تقتصر اليوم على USDC/USDT فقط، بما يتوافق مع مصفوفة
+[Wallet-as-a-Service](/wallets) (Solana وPolygon وBSC وBase). أي طلب جسر
+لمسار غير مُهيَّأ يعيد `bridge_not_configured` — وهذا قيد تشغيلي من جانبنا
+أثناء تفعيل أحد الممرات، وليس شيئًا يمكن تجاوزه من جانب العميل.
+</Note>

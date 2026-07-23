@@ -55,6 +55,16 @@ function verify(rawBody, signature, secret) {
 the same way as their API responses in [Wallets](/api/wallets) and
 [Bridge](/api/bridge).
 
+### Disputes
+
+A dispute is opened when a customer, from your checkout page, reports
+sending funds that didn't automatically confirm — wrong amount, wrong
+address, or a late send. It's self-service on the customer's side (they
+get an instant `matchedWallet` / `amountCovered` / `lateByMinutes` result),
+and `payment.dispute_opened` gives you the same detail so you can follow up
+manually if the automated check doesn't resolve it — for example, crediting
+an order despite a slightly-underpaid amount, at your discretion.
+
 ## Delivery & retries
 
 - Respond `2xx` within 10 seconds; anything else counts as a failure.

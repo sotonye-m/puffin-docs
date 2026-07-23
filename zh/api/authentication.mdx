@@ -1,0 +1,36 @@
+---
+title: "身份验证"
+description: "API 密钥、速率限制与错误"
+---
+
+## API 密钥
+
+服务器到服务器的端点使用 `X-API-Key` 请求头进行身份验证：
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/payment-intents/9b1f... \
+  -H "X-API-Key: mk_live_..."
+```
+
+- 密钥在创建时**仅显示一次**，并以哈希（SHA-256）方式存储。
+- 可随时从仪表盘撤销和轮换密钥（需要 `DEVELOPER` 或更高角色权限）。
+- 切勿在浏览器或移动端代码中使用 API 密钥——客户端请使用
+  [支付链接](/payment-links) 或 [iframe SDK](/embed)。
+
+## 速率限制
+
+每个 IP 每分钟 120 次请求。`429` 响应包含标准的 `X-RateLimit-*` 请求头。
+
+## 错误
+
+```json
+{ "error": { "code": "invalid_api_key", "message": "Invalid or revoked API key" } }
+```
+
+| 错误码 | 含义 |
+|---|---|
+| `missing_api_key` / `invalid_api_key` | 请求头缺失、已撤销，或商户账户未激活 |
+| `unsupported_asset` | 代币/链组合不受支持 |
+| `validation_error` | 请求体格式错误——错误信息会指出具体字段 |
+| `not_found` | 资源不存在或不属于您 |
+| `plan_limit` | 已达到钱包/团队配额上限——请升级套餐 |

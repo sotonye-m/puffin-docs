@@ -1,0 +1,75 @@
+---
+title: "Wallets"
+description: "WaaS वॉलेट्स बनाएं, फ़ंड करें, और मैनेज करें"
+---
+
+नीचे दिए सभी एंडपॉइंट्स `https://api.puffinmoney.com/v1/gateway/api` के
+अंदर हैं और `X-API-Key` हेडर चाहिए — देखें [ऑथेंटिकेशन](/api/authentication)।
+पूरा वॉकथ्रू देखने के लिए देखें [Wallet-as-a-Service](/wallets)।
+
+## एक वॉलेट बनाएं
+
+`POST /wallets`
+
+| फ़ील्ड | टाइप | ज़रूरी | नोट्स |
+|---|---|---|---|
+| `chain` | string | ✓ | `SOLANA`, `POLYGON`, `BSC`, या `BASE` |
+| `token` | string | ✓ | जैसे `USDC_SOL`, `USDT_POLYGON`, `USDC_BSC`, `USDC_BASE` — पूरे मैट्रिक्स के लिए देखें `/wallets` |
+| `label` | string | — | 40 अक्षरों तक, आपका खुद का रेफ़रेंस |
+
+पेमेंट इंटेंट्स जैसा ही `Idempotency-Key` हेडर सपोर्ट करता है। अगर आप अपने
+प्लान की वॉलेट लिमिट पर हैं तो `402 plan_limit` मिलता है, अगर चेन/टोकन
+पेयर WaaS मैट्रिक्स में नहीं है तो `400 unsupported_asset` मिलता है
+(रिस्पॉन्स बॉडी में वर्तमान `supported` मैट्रिक्स शामिल होता है ताकि आपको
+इसे हार्डकोड न करना पड़े)।
+
+```json
+// 201
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE", "address": "0x9273...6544", "label": "EU settlement", "custodyModel": "joint_custody" } }
+```
+
+## वॉलेट्स की लिस्ट देखें
+
+`GET /wallets` — इस API से आपने जितने भी वॉलेट बनाए हैं, साथ ही वर्तमान
+`supported` चेन/टोकन मैट्रिक्स लौटाता है।
+
+## एक वॉलेट देखें
+
+`GET /wallets/:id`
+
+## बैलेंस देखें
+
+`GET /wallets/:id/balance`
+
+```json
+{ "wallet": { "id": "8f2a1c…", "chain": "BASE", "token": "USDC_BASE" }, "balance": { "available": "1250.00", "pending": "0" } }
+```
+
+## डिपॉज़िट्स की लिस्ट देखें
+
+`GET /wallets/:id/deposits` — इस वॉलेट के हाल के 50 डिपॉज़िट तक।
+
+## एक विदड्रॉअल भेजें
+
+`POST /wallets/:id/withdrawals`
+
+| फ़ील्ड | टाइप | ज़रूरी | नोट्स |
+|---|---|---|---|
+| `toAddress` | string | ✓ | वॉलेट की अपनी चेन पर डेस्टिनेशन एड्रेस |
+| `amount` | string | ✓ | डेसिमल स्ट्रिंग, 8 dp तक |
+| `note` | string | — | 140 अक्षरों तक, आपका खुद का रेफ़रेंस |
+
+वॉलेट को तुरंत डेबिट करता है (ब्रॉडकास्ट से पहले रिज़र्व किया जाता है —
+इसलिए दो विदड्रॉअल कॉल एक साथ चलाकर डबल-स्पेंड नहीं कर सकते)। फ़ीस आपकी
+`waas` क्षमता प्राइसिंग के अनुसार लगती है — देखें
+[प्राइसिंग](/teams-and-plans#usage-based-pricing)।
+
+```json
+// 201
+{ "transaction": { "id": "tx_…", "type": "CRYPTO_WITHDRAWAL", "status": "PROCESSING", "amount": "500.00", "currency": "USDC_BASE" } }
+```
+
+<Note>
+फंड को किसी **दूसरी चेन** पर मूव करना है, न कि सिर्फ़ उसी चेन पर किसी और
+एड्रेस पर? इसकी जगह [Bridge](/api/bridge) इस्तेमाल करें।
+</Note>

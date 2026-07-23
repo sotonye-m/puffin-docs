@@ -8,15 +8,29 @@
     "light": "#60A5FA",
     "dark": "#1D4ED8"
   },
+  "logo": {
+    "light": "/logo/logo.svg",
+    "dark": "/logo/logo-dark.svg",
+    "href": "https://puffinmoney.com"
+  },
   "favicon": "/favicon.svg",
   "navigation": {
+    "languages": [
+      { "language": "en", "default": true },
+      { "language": "es" },
+      { "language": "fr" },
+      { "language": "pt" },
+      { "language": "zh" },
+      { "language": "hi" },
+      { "language": "ar" }
+    ],
     "tabs": [
       {
         "tab": "Guides",
         "groups": [
           { "group": "Getting started", "pages": ["introduction", "quickstart"] },
           { "group": "Ways to accept payments", "pages": ["payment-links", "hosted-checkout", "embed"] },
-          { "group": "Wallet-as-a-Service", "pages": ["wallets", "bridging"] },
+          { "group": "Wallet-as-a-Service", "pages": ["wallets", "bridging", "settlement"] },
           { "group": "Going further", "pages": ["webhooks", "teams-and-plans"] }
         ]
       },

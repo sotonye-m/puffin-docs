@@ -1,0 +1,55 @@
+---
+title: "الدفع المستضاف (تكامل ذاتي الاستضافة)"
+description: "أنشئ نوايا من خادمك، وأعد التوجيه إلى صفحة الدفع لدينا"
+---
+
+التدفق الكلاسيكي القائم على الخادم: يُنشئ خادمك الخلفي نية دفع بمفتاح API
+الخاص بك، ثم يعيد توجيه العميل إلى صفحة الدفع المستضافة.
+
+## التدفق
+
+```mermaid
+sequenceDiagram
+  participant C as العميل
+  participant S as خادمك
+  participant B as Puffin Pay
+  C->>S: ينقر على "الدفع بالعملات الرقمية"
+  S->>B: POST /v1/gateway/api/payment-intents (X-API-Key)
+  B-->>S: { intent, checkoutUrl }
+  S-->>C: 302 → pay.puffinmoney.com/pay/:id
+  C->>B: يرسل عملات مستقرة إلى العنوان الجديد
+  B-->>S: Webhook payment.confirmed (موقّع بـ HMAC)
+  B-->>C: إعادة التوجيه إلى successUrl الخاص بك
+```
+
+## أنشئ النية
+
+```js
+const res = await fetch('https://api.puffinmoney.com/v1/gateway/api/payment-intents', {
+  method: 'POST',
+  headers: { 'X-API-Key': process.env.PUFFIN_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    amount: '99.00',
+    token: 'USDC_BASE',
+    chain: 'BASE',
+    successUrl: 'https://yourstore.com/orders/123/thanks',
+    metadata: { orderId: '123' },
+  }),
+});
+const { intent, checkoutUrl } = await res.json();
+```
+
+## استعلم أو تحقق
+
+```bash
+GET /v1/gateway/api/payment-intents/:id   # X-API-Key
+```
+
+الحالات: `PENDING → CONFIRMED | EXPIRED | CANCELLED`. اعتمد دائمًا على
+**webhook** (أو طلب GET هذا) كمصدر للحقيقة — وليس المتصفح أبدًا.
+
+## الأصول المدعومة
+
+جميع العملات المستقرة على جميع الشبكات التي تدعمها Puffin: Solana وEthereum
+وBase وPolygon وBSC وArbitrum وOptimism وXDC — يعرض
+`GET /v1/wallets/supported` المصفوفة الحالية.

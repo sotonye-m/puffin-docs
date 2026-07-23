@@ -3,10 +3,16 @@ title: "Introduction"
 description: "Accept stablecoin payments on every major chain, settled to wallets you control"
 ---
 
-**Puffin Pay** is the crypto payment gateway by MacLeod Technologies. Your
-customers pay in stablecoins (USDC, USDT, EURC, USDG, PYUSD and more) on any
-supported network — Solana, Ethereum, Base, Polygon, BSC, Arbitrum, Optimism
-or XDC — and you get confirmation webhooks, a dashboard, and receipts.
+**Puffin Pay** is MacLeod Technologies' payment gateway for stablecoins.
+Give your customers a checkout that accepts USDC, USDT, EURC, and more —
+on Solana, Ethereum, Base, Polygon, BSC, Arbitrum, Optimism, or XDC — and
+get a confirmed payment back on your own terms: a signed webhook, a live
+dashboard, and a receipt your customer can keep.
+
+You pick how deep to integrate. Share a link with zero code, drop a
+checkout modal into your site with one script tag, or drive the whole flow
+from your server with a single API call — the payment experience is the
+same hosted checkout page underneath either way.
 
 ## Ways to integrate
 
@@ -26,9 +32,9 @@ or XDC — and you get confirmation webhooks, a dashboard, and receipts.
   </Card>
 </CardGroup>
 
-Moving funds between chains once you're holding them? See
-[Bridging & swaps](/bridging) — native CCTP V2 where it applies, NEAR
-Intents everywhere else.
+Holding funds across more chains than you'd like? See
+[Bridging & swaps](/bridging) — one endpoint moves value between chains
+and assets, and we pick the fastest safe route for you automatically.
 
 ## How a payment works
 
@@ -41,7 +47,15 @@ Intents everywhere else.
 Every payment address is single-use — no amount-matching heuristics, no
 crossed payments.
 
+## Getting paid out
+
+Confirmed payments settle to a wallet you control, on the schedule your
+account is configured for — see [Settlement](/settlement) for how that
+works and how to point it at your own address.
+
 ## Pricing
 
-Fees are set by your subscription plan (Starter 1.5%, Growth 1.0%, Scale
-0.6%) or a custom rate. See [Teams & plans](/teams-and-plans).
+Fees are set per capability (payments, wallets, bridging) by your plan, with
+custom rates available as you grow — see [Teams & plans](/teams-and-plans)
+for how pricing is structured, or check `GET /v1/gateway/merchants/me/fees`
+for your account's current numbers.

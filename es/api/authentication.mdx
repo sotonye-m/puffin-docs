@@ -1,0 +1,41 @@
+---
+title: "Autenticación"
+description: "API keys, límites de tasa y errores"
+---
+
+## API keys
+
+Los endpoints de servidor a servidor se autentican con el encabezado
+`X-API-Key`:
+
+```bash
+curl https://api.puffinmoney.com/v1/gateway/api/payment-intents/9b1f... \
+  -H "X-API-Key: mk_live_..."
+```
+
+- Las keys se muestran **una sola vez** al crearlas y se guardan con hash
+  (SHA-256).
+- Revoca y rota en cualquier momento desde el panel (rol `DEVELOPER` o
+  superior).
+- Nunca uses una API key en código de navegador o móvil — usa
+  [enlaces de pago](/payment-links) o el [SDK de iframe](/embed) del lado
+  del cliente.
+
+## Límites de tasa
+
+120 solicitudes/minuto por IP. Las respuestas `429` incluyen los
+encabezados estándar `X-RateLimit-*`.
+
+## Errores
+
+```json
+{ "error": { "code": "invalid_api_key", "message": "Invalid or revoked API key" } }
+```
+
+| Código | Significado |
+|---|---|
+| `missing_api_key` / `invalid_api_key` | Encabezado ausente, revocado, o el comercio no está activo |
+| `unsupported_asset` | El par token/red no está soportado |
+| `validation_error` | Cuerpo mal formado — el mensaje indica el campo |
+| `not_found` | El recurso no existe o no es tuyo |
+| `plan_limit` | Se alcanzó el límite de billeteras/equipo — actualiza tu plan |

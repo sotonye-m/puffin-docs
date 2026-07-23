@@ -3,26 +3,27 @@ title: "Bridging & swaps"
 description: "Move USDC and USDT across Solana, Polygon, BSC, and Base from one API"
 ---
 
-Puffin routes cross-chain transfers through whichever mechanism actually
-fits the pair you're moving — you call one endpoint either way.
+Puffin automatically routes cross-chain transfers the fastest safe way for
+the specific pair you're moving — you call one endpoint, we handle picking
+and executing the route.
 
-## How routing works
+## How it works
 
 <CardGroup cols={2}>
-  <Card title="CCTP V2" icon="bolt">
-    Used for **USDC-only** legs between CCTP-enabled chains (Solana and the
-    supported EVM chains). Native burn-and-mint via Circle's protocol — no
-    wrapped assets, no liquidity pool slippage.
+  <Card title="Smart routing" icon="bolt">
+    Every transfer is evaluated against the assets and chains involved, and
+    routed however it completes fastest and most reliably — no wrapped
+    assets, no manual liquidity-pool slippage to account for.
   </Card>
-  <Card title="NEAR Intents" icon="shuffle">
-    Used for everything CCTP doesn't cover: **USDT** on any chain, BSC legs,
-    and any cross-asset swap. Solver-network routed via a deposit address.
+  <Card title="One endpoint, always" icon="shuffle">
+    Same-asset transfers between chains and cross-asset swaps both go
+    through the same call. You never choose the mechanism yourself.
   </Card>
 </CardGroup>
 
-You never choose the route explicitly — `POST /bridge/quote` tells you which
-one was selected (`"route": "cctp_v2"` or `"route": "near_intents"`) along
-with the network fee and an ETA, before you commit to it.
+`POST /bridge/quote` tells you the network fee and an ETA before you commit
+— `route` in the response is an internal routing identifier for support
+purposes only; it's not something you need to branch on client-side.
 
 ## Quote, then execute
 
@@ -40,7 +41,7 @@ curl -X POST https://api.puffinmoney.com/v1/gateway/api/bridge/quote \
 
 ```json
 {
-  "quote": { "route": "cctp_v2", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
+  "quote": { "route": "auto", "networkFee": "0.10", "estimatedOutAmount": "999.90", "etaSeconds": 30 },
   "ourFee": { "platformFee": "1.00", "gasFee": "0.05", "totalFee": "1.05" }
 }
 ```
@@ -73,7 +74,7 @@ curl https://api.puffinmoney.com/v1/gateway/api/bridge/<id> \
 | Status | Meaning |
 |---|---|
 | `pending` / `source_sent` | Debited, broadcasting the source-side transaction |
-| `attesting` | Waiting on CCTP attestation or the NEAR Intents solver |
+| `attesting` | Confirming the transfer before it can be delivered on the destination chain |
 | `completed` | Funds delivered to `destinationAddress` on `toChain` |
 | `failed` / `refunded` | Did not complete — see `metadata` for details |
 
