@@ -40,10 +40,15 @@ No backend at all:
 PuffinPay.openLink({
   slug: 'consulting-invoice-x7k2m9',
   amount: '150.00',            // omit if the link has a fixed amount
-  customerEmail: 'buyer@example.com',
+  customerEmail: 'buyer@example.com', // omit and the modal asks the payer
   onSuccess: () => (window.location = '/thanks'),
 });
 ```
+
+Pass `customerEmail` when you already know it and the payer sees it masked
+and locked. Omit it and the modal opens the hosted link page first, which
+collects the payer's own address for the receipt — either way no one signs
+in, and callbacks fire the same.
 
 ## API
 

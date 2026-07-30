@@ -11,8 +11,15 @@ mints a fresh payment intent, so one link can collect unlimited payments.
 1. Dashboard → **Payment links** → set a title, choose token & chain.
 2. Set a fixed amount, or leave it blank to let the customer choose
    (donations, tips, pay-what-you-want).
-3. Share `https://pay.puffinmoney.com/link/<slug>` — chat, invoice,
+3. Optionally lock the link to one payer's email — invoicing a known
+   customer. They see it masked on the page and can't change it. Leave it
+   open and the page asks whoever opens it for their own address.
+4. Share `https://pay.puffinmoney.com/link/<slug>` — chat, invoice,
    email signature, QR on a receipt, anywhere.
+
+The payer never signs in and never creates an account. The one thing the
+page insists on is an email address, so the payment receipt has somewhere
+to go.
 
 ## Programmatic use
 
@@ -25,10 +32,10 @@ curl -X POST https://api.puffinmoney.com/v1/gateway/public/links/<slug>/intent \
 ```
 
 ```json
-{ "intentId": "9b1f…" }
+{ "intentId": "9b1f…", "checkoutUrl": "https://pay.puffinmoney.com/pay/9b1f…" }
 ```
 
-Then send the customer to `/pay/<intentId>` or open it with the
+Then send the customer to `checkoutUrl` or open it with the
 [iframe SDK](/embed):
 
 ```js
@@ -37,4 +44,8 @@ PuffinPay.openLink({ slug: 'consulting-invoice-x7k2m9', amount: '150.00' });
 
 <Note>
 Amount is required in the request only when the link has no fixed amount.
+`customerEmail` is required only when the link isn't locked to a payer — a
+locked link always uses its own address and ignores anything you send.
+Without either, use the hosted page (`/link/<slug>`, or `PuffinPay.openLink`
+with no `customerEmail`) and the payer supplies it themselves.
 </Note>

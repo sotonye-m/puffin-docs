@@ -37,7 +37,13 @@ const res = await fetch('https://api.puffinmoney.com/v1/gateway/api/payment-inte
   }),
 });
 const { intent, checkoutUrl } = await res.json();
+// checkoutUrl is absolute: https://pay.puffinmoney.com/pay/<id>
 ```
+
+Add `customerEmail` to that body if you collected one — the payer then sees
+it masked and can't change it. Leave it out and the checkout page asks them
+for one before showing payment details, so a receipt always has somewhere to
+go. Either way the payer never logs in.
 
 ## Poll or verify
 
